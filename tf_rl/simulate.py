@@ -7,23 +7,28 @@ from IPython.display import clear_output, display, HTML
 from itertools import count
 from os.path import join, exists
 from os import makedirs
+#import karpathy_game
+#import discrete_deepq
 
 def simulate(simulation,
-             controller= None,
+             controller,
              fps=60,
              visualize_every=1,
              action_every=1,
              simulation_resolution=None,
              wait=False,
              disable_training=False,
-             save_path=None):
+             save_path="/Users/tylerbonnell/Documents/gitRepro/tensorflow-deepq/data"):
+    
+    
     """Start the simulation. Performs three tasks
 
         - visualizes simulation in iPython notebook
         - advances simulator state
         - reports state to controller and chooses actions
           to be performed.
-
+          
+    
     Parameters
     -------
     simulation: tr_lr.simulation
