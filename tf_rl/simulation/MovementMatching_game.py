@@ -12,7 +12,7 @@ from euclid import Circle, Point2, Vector2, LineSegment2
 import tf_rl.utils.svg as svg
 
 class GameObject(object):
-    def __init__(self, position, speed, obj_type, settings):
+    def __init__(self, position, speed, obj_type, settings, colID):
         """Esentially represents circles of different kinds, which have
         position and speed."""
         self.settings = settings
@@ -22,6 +22,7 @@ class GameObject(object):
         self.position = position
         self.speed    = speed
         self.bounciness = 1.0
+        self.colID = colID
 
     def wall_collisions(self):
         """Update speed upon collision with the wall."""
@@ -37,11 +38,20 @@ class GameObject(object):
         """Move as if dt seconds passed"""
         self.position += dt * self.speed
         self.position = Point2(*self.position)
+    
+    def update_position(self,GPS,timeS):
+        self.position = Point2(GPS[timeS][self.colID],GPS[timeS][self.colID+1])
 
-    def step(self, dt):
-        """Move and bounce of walls."""
-        self.wall_collisions()
-        self.move(dt)
+    def step(self, dt,GPS, timeS):
+        #"""Move and bounce of walls."""
+        #self.wall_collisions()
+        
+        #group mates move as observed, agent attempts to match focal animal movements
+        if(self.colID==0):
+            self.move(dt)
+        else:
+            """Update position based on GPS data"""
+            self.update_position(GPS,timeS)
 
     def as_circle(self):
         return Circle(self.position, float(self.radius))
@@ -56,6 +66,9 @@ class MovementGame(object):
         """Initiallize game simulator with settings"""
         self.settings = settings
         self.GPS = gpsFile
+        self.timeStep = 0
+        self.previousOffset = 0
+        self.deltaT = 0
         self.size  = self.settings["world_size"]
         self.walls = [LineSegment2(Point2(0,0),                        Point2(0,self.size[1])),
                       LineSegment2(Point2(0,self.size[1]),             Point2(self.size[0], self.size[1])),
@@ -65,20 +78,23 @@ class MovementGame(object):
         self.hero = GameObject(Point2(*self.settings["hero_initial_position"]),
                                Vector2(*self.settings["hero_initial_speed"]),
                                "hero",
-                               self.settings)
+                               self.settings,0)
         if not self.settings["hero_bounces_off_walls"]:
             self.hero.bounciness = 0.0
 
         self.objects = []
+        count = 0
         for obj_type, number in settings["num_objects"].items():
+            count=count+2
             for _ in range(number):
-                self.spawn_object(obj_type)
-
+                self.spawn_object(obj_type,count)
+                
+                
         self.observation_lines = self.generate_observation_lines()
 
         self.object_reward = 0
         self.collected_rewards = []
-
+ 
         # every observation_line sees one of objects or wall and
         # two numbers representing speed of the object (if applicable)
         self.eye_observation_size = len(self.settings["objects"]) + 3
@@ -96,7 +112,7 @@ class MovementGame(object):
         self.hero.speed *= 0.5
         self.hero.speed += self.directions[action_id] * self.settings["delta_v"]
 
-    def spawn_object(self, obj_type):
+    def spawn_object(self, obj_type, colID):
         """Spawn object of a given type and add it to the objects array"""
         radius = self.settings["object_radius"]
         position = np.random.uniform([radius, radius], np.array(self.size) - radius)
@@ -105,34 +121,56 @@ class MovementGame(object):
         speed    = np.random.uniform(-max_speed, max_speed).astype(float)
         speed = Vector2(float(speed[0]), float(speed[1]))
 
-        self.objects.append(GameObject(position, speed, obj_type, self.settings))
+        self.objects.append(GameObject(position, speed, obj_type, self.settings,colID))
 
     def step(self, dt):
         """Simulate all the objects for a given ammount of time.
-
+        i'll need to change this so that the positions update based on the gps data
         Also resolve collisions with the hero"""
         for obj in self.objects + [self.hero] :
-            obj.step(dt)
+            #obj.step(dt)
+            obj.step(dt, self.GPS, self.timeStep)
         #self.resolve_collisions()
-        self.matchingMovements()
+        #self.matchingMovements()
+        self.timeStep=self.timeStep+1
+        self.deltaT = self.deltaT + 1
+        print(self.timeStep)
 
     def squared_distance(self, p1, p2):
         return (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2
 
     def matchingMovements(self):
-        """new command to reward agent based on match with observed travel"""
-        totalOffset = 0
-        sim = [self.hero.speed[0], self.hero.speed[1]]
-        obs = [0,1]
+        """new command to reward agent based on match with observed travel: using distance only right now"""
+        totalOffset = 9999
+        sim = [self.hero.position[0], self.hero.position[1]]
+        obs = [self.GPS[self.timeStep][0],self.GPS[self.timeStep][1]]
+        
+        #reward based on offset from focal animals actual path
         if sim[0]==0. and sim[1]==0.:
             """nothing"""        
         else: 
-            totalOffset = self.angle_between2(sim, obs) 
+            totalOffset = self.distance_between(sim, obs) 
         
         if totalOffset< self.settings["min_offset"]:
-            if totalOffset > 0:
-                self.object_reward += self.settings["max_rewards"] * (1.0-totalOffset)
-                print("Calculated diff angle ", totalOffset, "  sim=",sim[0],",",sim[1],"  --  Rewards given ",self.object_reward)
+            self.object_reward += self.settings["max_rewards"] * (1 - (totalOffset / self.settings["min_offset"]))
+                   
+        else:
+            self.object_reward += self.settings["negative_reward"]
+            
+        if totalOffset < self.previousOffset:
+            self.object_reward += self.settings["positive_reward"]
+        
+        
+        print("Total distance = ", totalOffset," Change = ",totalOffset - self.previousOffset,"  --  Rewards given ",self.object_reward)
+        self.previousOffset = totalOffset
+        
+        
+        #"""update hero to have the same speed and position as the observed data"""
+        #if(self.timeStep>1 and self.deltaT>self.settings["deltaT"]):
+        #   self.hero.position = Point2(obs[0],obs[1])
+        #    self.hero.speed = Vector2(self.GPS[self.timeStep][0]-self.GPS[self.timeStep-1][0], self.GPS[self.timeStep][1]-self.GPS[self.timeStep-1][1])
+        #   self.deltaT=0
+        
         
     def unit_vector(self, vector):
         """ Returns the unit vector of the vector.  """
@@ -142,6 +180,14 @@ class MovementGame(object):
         v1_u = self.unit_vector(v1)
         v2_u = self.unit_vector(v2)
         return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+    
+    def distance_between(self, v1, v2):
+        hypo = 0
+        if (v2[0]-v1[0]==0 and v2[1]-v1[1]==0):
+            hypo = 0
+        else:
+            hypo = math.hypot(v2[0]-v1[0], v2[1]-v1[1])
+        return hypo
     
     def resolve_collisions(self):
         
@@ -261,7 +307,8 @@ class MovementGame(object):
         wall_reward =  self.settings["wall_distance_penalty"] * \
                        np.exp(-self.distance_to_walls() / self.settings["tolerable_distance_to_wall"])
         assert wall_reward < 1e-3, "You are rewarding hero for being close to the wall!"
-        total_reward = wall_reward + self.object_reward
+        self.matchingMovements() #reward for being close to focal animal location 
+        total_reward =  self.object_reward  #wall_reward +
         self.object_reward = 0
         self.collected_rewards.append(total_reward)
         return total_reward
