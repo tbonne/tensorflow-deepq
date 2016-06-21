@@ -133,6 +133,7 @@ class MovementGame(object):
         #self.resolve_collisions()
         #self.matchingMovements()
         self.timeStep=self.timeStep+1
+        #if(self.timeStep=7100)self.hero.position = 
         self.deltaT = self.deltaT + 1
         print(self.timeStep)
 

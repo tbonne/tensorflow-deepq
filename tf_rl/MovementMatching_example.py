@@ -168,7 +168,7 @@ else:
 
     # DiscreteDeepQ object
     current_controller = DiscreteDeepQ(g.observation_size, g.num_actions, brain, optimizer, session,
-                                       discount_rate=0.99, exploration_period=5000, max_experience=10000, 
+                                       discount_rate=0.99, exploration_period=3500, max_experience=7000, 
                                        store_every_nth=4, train_every_nth=4,
                                        summary_writer=journalist)
     
@@ -186,7 +186,7 @@ if fast_mode:
 else:
     WAIT, VISUALIZE_EVERY = True, 1
 
-    
+#for i in range(2):    
 try:
     with tf.device("/cpu:0"):
         simulate(simulation=g,
@@ -196,9 +196,9 @@ try:
                  action_every=ACTION_EVERY,
                  wait=WAIT,
                  disable_training=False,
-                 simulation_resolution=0.1, #0.001
+                 simulation_resolution=0.01, #0.001
                  save_path="/Users/tylerbonnell/Documents/gitRepro/tensorflow-deepq/data/testData")
-except KeyboardInterrupt:
+except IndexError: #end of GPS file
     print("Interrupted")
     
 session.run(current_controller.target_network_update)

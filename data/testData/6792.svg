@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<svg height="1100" width="1020" >
+ <g style="fill-opacity:1.0; stroke:black;
+  stroke-width:1;">
+  <rect x="10" y="10" height="1000"
+        width="1000" style="fill:none;" />
+  <line x1="680" y1="393" x2="880" y2="393" />
+  <line x1="680" y1="393" x2="876" y2="432" />
+  <line x1="680" y1="393" x2="864" y2="470" />
+  <line x1="680" y1="393" x2="846" y2="504" />
+  <line x1="680" y1="393" x2="821" y2="535" />
+  <line x1="680" y1="393" x2="791" y2="559" />
+  <line x1="680" y1="393" x2="756" y2="578" />
+  <line x1="680" y1="393" x2="719" y2="589" />
+  <line x1="680" y1="393" x2="680" y2="593" />
+  <line x1="680" y1="393" x2="641" y2="589" />
+  <line x1="680" y1="393" x2="603" y2="578" />
+  <line x1="680" y1="393" x2="569" y2="559" />
+  <line x1="680" y1="393" x2="538" y2="535" />
+  <line x1="680" y1="393" x2="513" y2="504" />
+  <line x1="680" y1="393" x2="495" y2="470" />
+  <line x1="680" y1="393" x2="484" y2="432" />
+  <line x1="680" y1="393" x2="480" y2="393" />
+  <line x1="680" y1="393" x2="484" y2="354" />
+  <line x1="680" y1="393" x2="495" y2="317" />
+  <line x1="680" y1="393" x2="513" y2="282" />
+  <line x1="680" y1="393" x2="538" y2="252" />
+  <line x1="680" y1="393" x2="569" y2="227" />
+  <line x1="680" y1="393" x2="603" y2="208" />
+  <line x1="680" y1="393" x2="641" y2="197" />
+  <line x1="680" y1="393" x2="680" y2="193" />
+  <line x1="680" y1="393" x2="719" y2="197" />
+  <line x1="680" y1="393" x2="756" y2="208" />
+  <line x1="680" y1="393" x2="791" y2="227" />
+  <line x1="680" y1="393" x2="821" y2="252" />
+  <line x1="680" y1="393" x2="846" y2="282" />
+  <line x1="680" y1="393" x2="864" y2="317" />
+  <line x1="680" y1="393" x2="876" y2="354" />
+  <circle cx="204" cy="319" r="5"
+          style="fill:magenta;" />
+  <circle cx="283" cy="279" r="5"
+          style="fill:magenta;" />
+  <circle cx="266" cy="302" r="5"
+          style="fill:yellow;" />
+  <circle cx="249" cy="273" r="5"
+          style="fill:magenta;" />
+  <circle cx="244" cy="282" r="5"
+          style="fill:magenta;" />
+  <circle cx="230" cy="287" r="5"
+          style="fill:magenta;" />
+  <circle cx="269" cy="284" r="5"
+          style="fill:magenta;" />
+  <circle cx="283" cy="281" r="5"
+          style="fill:black;" />
+  <circle cx="276" cy="289" r="5"
+          style="fill:magenta;" />
+  <circle cx="265" cy="319" r="5"
+          style="fill:green;" />
+  <circle cx="287" cy="285" r="5"
+          style="fill:magenta;" />
+  <circle cx="253" cy="279" r="5"
+          style="fill:magenta;" />
+  <circle cx="283" cy="283" r="5"
+          style="fill:magenta;" />
+  <circle cx="277" cy="283" r="5"
+          style="fill:blue;" />
+  <circle cx="269" cy="323" r="5"
+          style="fill:magenta;" />
+  <circle cx="247" cy="292" r="5"
+          style="fill:cyan;" />
+  <circle cx="201" cy="314" r="5"
+          style="fill:grey;" />
+  <circle cx="267" cy="284" r="5"
+          style="fill:magenta;" />
+  <circle cx="229" cy="323" r="5"
+          style="fill:orange;" />
+  <circle cx="278" cy="287" r="5"
+          style="fill:magenta;" />
+  <circle cx="680" cy="393" r="5"
+          style="fill:red;" />
+  <text x="10" y="1035" font-size="15">
+   fps = 30.0
+  </text>
+  <text x="10" y="1055" font-size="15">
+   nearest wall = 324.8
+  </text>
+  <text x="10" y="1075" font-size="15">
+   reward       = 0.2
+  </text>
+  <text x="10" y="1095" font-size="15">
+   objects eaten => 
+  </text>
+ </g>
+</svg>
