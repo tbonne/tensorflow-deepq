@@ -38,9 +38,13 @@ class GameObject(object):
         """Move as if dt seconds passed"""
         self.position += dt * self.speed
         self.position = Point2(*self.position)
+        
     
     def update_position(self,GPS,timeS):
         self.position = Point2(GPS[timeS][self.colID],GPS[timeS][self.colID+1])
+    
+    def startConditions(self):
+        self.timeStep=0;
 
     def step(self, dt,GPS, timeS):
         #"""Move and bounce of walls."""
@@ -136,7 +140,7 @@ class MovementGame(object):
         #if(self.timeStep=7100)self.hero.position = 
         self.deltaT = self.deltaT + 1
         print(self.timeStep)
-
+        
     def squared_distance(self, p1, p2):
         return (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2
 
@@ -160,7 +164,10 @@ class MovementGame(object):
             
         if totalOffset < self.previousOffset:
             self.object_reward += self.settings["positive_reward"]
-        
+            
+        speedNow = [self.hero.speed[0], self.hero.speed[1]]
+        velocityNow = self.total_speed(speedNow)
+        self.object_reward += velocityNow*self.settings["movement_penalty"]
         
         print("Total distance = ", totalOffset," Change = ",totalOffset - self.previousOffset,"  --  Rewards given ",self.object_reward)
         self.previousOffset = totalOffset
@@ -188,6 +195,14 @@ class MovementGame(object):
             hypo = 0
         else:
             hypo = math.hypot(v2[0]-v1[0], v2[1]-v1[1])
+        return hypo
+    
+    def total_speed(self, v1):
+        hypo = 0
+        if (v1[0]-0==0 and v1[1]-0==0):
+            hypo = 0
+        else:
+            hypo = math.hypot(v1[0]-0, v1[1]-0)
         return hypo
     
     def resolve_collisions(self):
@@ -326,6 +341,16 @@ class MovementGame(object):
             chunk = plottable[i-smoothing:i]
             x.append(sum(chunk) / len(chunk))
         plt.plot(list(range(len(x))), x)
+        print(x)
+        
+    def get_total_rewards(self):
+        sumL = sum(self.collected_rewards) 
+        del self.collected_rewards[:] #reinitialize the rewards list
+        return sumL
+    
+    def return_to_start(self):
+        self.timeStep=0
+        self.hero.update_position(self.GPS, 0)
 
     def generate_observation_lines(self):
         """Generate observation segments in settings["num_observation_lines"] directions"""

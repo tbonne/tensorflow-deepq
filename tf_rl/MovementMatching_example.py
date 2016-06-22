@@ -66,7 +66,7 @@ current_settings = {
         'friend': 0.1,
     },
     'min_offset': 10,
-    'max_rewards': 5,
+    'max_rewards': 4,
     'hero_bounces_off_walls': False,
     'world_size': (1000,1000),
     'hero_initial_position': [826.7389, 761.1064],
@@ -124,8 +124,9 @@ current_settings = {
     "tolerable_distance_to_wall": 50,
     "wall_distance_penalty":  -0.0,
     "delta_v": 50,
-    "negative_reward":-0.1,
-    "positive_reward":0.6,
+    "negative_reward":0.0,
+    "positive_reward":2.0,
+    "movement_penalty":-0.001,
     "deltaT":120
 }
 
@@ -180,34 +181,44 @@ else:
 FPS          = 30
 ACTION_EVERY = 3
     
-fast_mode = False
+fast_mode = True
 if fast_mode:
     WAIT, VISUALIZE_EVERY = False, 20
 else:
     WAIT, VISUALIZE_EVERY = True, 1
 
-#for i in range(2):    
-try:
-    with tf.device("/cpu:0"):
-        simulate(simulation=g,
-                 controller=current_controller,
-                 fps=FPS,
-                 visualize_every=VISUALIZE_EVERY,
-                 action_every=ACTION_EVERY,
-                 wait=WAIT,
-                 disable_training=False,
-                 simulation_resolution=0.01, #0.001
-                 save_path="/Users/tylerbonnell/Documents/gitRepro/tensorflow-deepq/data/testData")
-except IndexError: #end of GPS file
-    print("Interrupted")
+
+iterations = 50
+rewards = [None]*iterations
+
+for i in range(iterations):    
+    try:
+        #for d in ['/cpu:1', '/cpu:2', '/cpu:3']:
+            with tf.device("/cpu:0"):
+            #with tf.device(d):
+                simulate(simulation=g,
+                        controller=current_controller,
+                        fps=FPS,
+                        visualize_every=VISUALIZE_EVERY,
+                        action_every=ACTION_EVERY,
+                        wait=WAIT,
+                        disable_training=False,
+                        simulation_resolution=0.01, #0.001
+                        save_path="/Users/tylerbonnell/Documents/gitRepro/tensorflow-deepq/data/testData")
+    except IndexError: #end of GPS file
+        print("Interrupted")
+        g.return_to_start()
+        rewards[i]=g.get_total_rewards()
     
-session.run(current_controller.target_network_update)
+    session.run(current_controller.target_network_update)
 
-current_controller.q_network.input_layer.Ws[0].eval()
+    current_controller.q_network.input_layer.Ws[0].eval()
 
-current_controller.target_q_network.input_layer.Ws[0].eval()
+    current_controller.target_q_network.input_layer.Ws[0].eval()
 
-g.plot_reward(smoothing=100)
+    g.plot_reward(smoothing=100)
 
 
-print("test completed")
+print("iterations completed")
+#g.plot_reward(smoothing=100)
+print(rewards)

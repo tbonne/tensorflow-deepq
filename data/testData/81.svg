@@ -4,88 +4,88 @@
   stroke-width:1;">
   <rect x="10" y="10" height="1000"
         width="1000" style="fill:none;" />
-  <line x1="806" y1="734" x2="1006" y2="734" />
-  <line x1="806" y1="734" x2="1002" y2="773" />
-  <line x1="806" y1="734" x2="991" y2="810" />
-  <line x1="806" y1="734" x2="973" y2="845" />
-  <line x1="806" y1="734" x2="948" y2="875" />
-  <line x1="806" y1="734" x2="917" y2="900" />
-  <line x1="806" y1="734" x2="883" y2="919" />
-  <line x1="806" y1="734" x2="845" y2="930" />
-  <line x1="806" y1="734" x2="806" y2="934" />
-  <line x1="806" y1="734" x2="767" y2="930" />
-  <line x1="806" y1="734" x2="730" y2="919" />
-  <line x1="806" y1="734" x2="695" y2="900" />
-  <line x1="806" y1="734" x2="665" y2="875" />
-  <line x1="806" y1="734" x2="640" y2="845" />
-  <line x1="806" y1="734" x2="622" y2="810" />
-  <line x1="806" y1="734" x2="610" y2="773" />
-  <line x1="806" y1="734" x2="606" y2="734" />
-  <line x1="806" y1="734" x2="610" y2="695" />
-  <line x1="806" y1="734" x2="622" y2="657" />
-  <line x1="806" y1="734" x2="640" y2="623" />
-  <line x1="806" y1="734" x2="665" y2="592" />
-  <line x1="806" y1="734" x2="695" y2="568" />
-  <line x1="806" y1="734" x2="730" y2="549" />
-  <line x1="806" y1="734" x2="767" y2="538" />
-  <line x1="806" y1="734" x2="806" y2="534" />
-  <line x1="806" y1="734" x2="845" y2="538" />
-  <line x1="806" y1="734" x2="883" y2="549" />
-  <line x1="806" y1="734" x2="917" y2="568" />
-  <line x1="806" y1="734" x2="948" y2="592" />
-  <line x1="806" y1="734" x2="973" y2="623" />
-  <line x1="806" y1="734" x2="991" y2="657" />
-  <line x1="806" y1="734" x2="1002" y2="695" />
-  <circle cx="779" cy="753" r="5"
+  <line x1="224" y1="335" x2="424" y2="335" />
+  <line x1="224" y1="335" x2="420" y2="374" />
+  <line x1="224" y1="335" x2="408" y2="411" />
+  <line x1="224" y1="335" x2="390" y2="446" />
+  <line x1="224" y1="335" x2="365" y2="476" />
+  <line x1="224" y1="335" x2="335" y2="501" />
+  <line x1="224" y1="335" x2="300" y2="519" />
+  <line x1="224" y1="335" x2="263" y2="531" />
+  <line x1="224" y1="335" x2="224" y2="535" />
+  <line x1="224" y1="335" x2="185" y2="531" />
+  <line x1="224" y1="335" x2="147" y2="519" />
+  <line x1="224" y1="335" x2="113" y2="501" />
+  <line x1="224" y1="335" x2="82" y2="476" />
+  <line x1="224" y1="335" x2="57" y2="446" />
+  <line x1="224" y1="335" x2="39" y2="411" />
+  <line x1="224" y1="335" x2="28" y2="374" />
+  <line x1="224" y1="335" x2="24" y2="335" />
+  <line x1="224" y1="335" x2="28" y2="295" />
+  <line x1="224" y1="335" x2="39" y2="258" />
+  <line x1="224" y1="335" x2="57" y2="223" />
+  <line x1="224" y1="335" x2="82" y2="193" />
+  <line x1="224" y1="335" x2="113" y2="168" />
+  <line x1="224" y1="335" x2="147" y2="150" />
+  <line x1="224" y1="335" x2="185" y2="138" />
+  <line x1="224" y1="335" x2="224" y2="135" />
+  <line x1="224" y1="335" x2="263" y2="138" />
+  <line x1="224" y1="335" x2="300" y2="150" />
+  <line x1="224" y1="335" x2="335" y2="168" />
+  <line x1="224" y1="335" x2="365" y2="193" />
+  <line x1="224" y1="335" x2="390" y2="223" />
+  <line x1="224" y1="335" x2="408" y2="258" />
+  <line x1="224" y1="335" x2="420" y2="295" />
+  <circle cx="225" cy="338" r="5"
           style="fill:magenta;" />
-  <circle cx="810" cy="792" r="5"
+  <circle cx="270" cy="290" r="5"
+          style="fill:magenta;" />
+  <circle cx="266" cy="321" r="5"
           style="fill:grey;" />
-  <circle cx="788" cy="766" r="5"
-          style="fill:magenta;" />
-  <circle cx="805" cy="777" r="5"
-          style="fill:orange;" />
-  <circle cx="791" cy="770" r="5"
-          style="fill:magenta;" />
-  <circle cx="771" cy="750" r="5"
-          style="fill:magenta;" />
-  <circle cx="813" cy="793" r="5"
-          style="fill:magenta;" />
-  <circle cx="789" cy="761" r="5"
-          style="fill:black;" />
-  <circle cx="801" cy="771" r="5"
-          style="fill:magenta;" />
-  <circle cx="799" cy="787" r="5"
-          style="fill:green;" />
-  <circle cx="798" cy="777" r="5"
+  <circle cx="272" cy="322" r="5"
           style="fill:blue;" />
-  <circle cx="801" cy="789" r="5"
-          style="fill:magenta;" />
-  <circle cx="811" cy="794" r="5"
-          style="fill:magenta;" />
-  <circle cx="796" cy="773" r="5"
-          style="fill:yellow;" />
-  <circle cx="804" cy="768" r="5"
-          style="fill:magenta;" />
-  <circle cx="782" cy="761" r="5"
-          style="fill:magenta;" />
-  <circle cx="782" cy="757" r="5"
-          style="fill:magenta;" />
-  <circle cx="783" cy="758" r="5"
-          style="fill:magenta;" />
-  <circle cx="807" cy="783" r="5"
-          style="fill:magenta;" />
-  <circle cx="787" cy="764" r="5"
+  <circle cx="254" cy="333" r="5"
+          style="fill:black;" />
+  <circle cx="260" cy="291" r="5"
           style="fill:cyan;" />
-  <circle cx="806" cy="734" r="5"
+  <circle cx="262" cy="328" r="5"
+          style="fill:green;" />
+  <circle cx="286" cy="285" r="5"
+          style="fill:magenta;" />
+  <circle cx="276" cy="311" r="5"
+          style="fill:magenta;" />
+  <circle cx="267" cy="325" r="5"
+          style="fill:magenta;" />
+  <circle cx="283" cy="317" r="5"
+          style="fill:magenta;" />
+  <circle cx="268" cy="317" r="5"
+          style="fill:magenta;" />
+  <circle cx="289" cy="294" r="5"
+          style="fill:magenta;" />
+  <circle cx="287" cy="312" r="5"
+          style="fill:magenta;" />
+  <circle cx="260" cy="327" r="5"
+          style="fill:magenta;" />
+  <circle cx="267" cy="324" r="5"
+          style="fill:magenta;" />
+  <circle cx="223" cy="342" r="5"
+          style="fill:magenta;" />
+  <circle cx="268" cy="333" r="5"
+          style="fill:magenta;" />
+  <circle cx="240" cy="338" r="5"
+          style="fill:yellow;" />
+  <circle cx="293" cy="292" r="5"
+          style="fill:orange;" />
+  <circle cx="224" cy="335" r="5"
           style="fill:red;" />
   <text x="10" y="1035" font-size="15">
-   fps = 1.0
+   fps = 364.9
   </text>
   <text x="10" y="1055" font-size="15">
-   nearest wall = 198.2
+   nearest wall = 209.2
   </text>
   <text x="10" y="1075" font-size="15">
-   reward       = 0.2
+   reward       = 1.1
   </text>
   <text x="10" y="1095" font-size="15">
    objects eaten => 
