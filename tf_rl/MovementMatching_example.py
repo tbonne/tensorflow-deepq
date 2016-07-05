@@ -11,9 +11,8 @@ from tf_rl.simulation.MovementMatching_game import MovementGame
 import csv
 
 
-
-
-LOG_DIR = tempfile.mkdtemp()
+#LOG_DIR = tempfile.mkdtemp()
+LOG_DIR = "/tmp/mnist_logs"
 print(LOG_DIR)
 
 current_settings = {
@@ -65,8 +64,7 @@ current_settings = {
     'object_reward': {
         'friend': 0.1,
     },
-    'min_offset': 10,
-    'max_rewards': 4,
+    'min_offset': 0.785,
     'hero_bounces_off_walls': False,
     'world_size': (1000,1000),
     'hero_initial_position': [826.7389, 761.1064],
@@ -120,14 +118,16 @@ current_settings = {
         
     },                
     "num_observation_lines" : 32,
-    "observation_line_length": 200.,
+    "observation_line_length": 100.,
     "tolerable_distance_to_wall": 50,
     "wall_distance_penalty":  -0.0,
-    "delta_v": 50,
-    "negative_reward":0.0,
-    "positive_reward":2.0,
+    "delta_v": 1,
+    'max_rewards': 4,
+    "negative_reward":-0.001,
+    "positive_reward":0.001,
     "movement_penalty":-0.001,
-    "deltaT":120
+    "deltaT":120,
+    "stopped_distance":0.000001
 }
 
 #import observed movement data (GPS)
@@ -143,6 +143,7 @@ with open ('2hourTrack.csv', newline='') as csvfile:
 # create the game simulator
 g = MovementGame(current_settings, gpsdata)
 
+
 human_control = False
 
 if human_control:
@@ -155,6 +156,7 @@ else:
 
     # This little guy will let us run tensorboard
     #      tensorboard --logdir [LOG_DIR]
+    summary_op = tf.merge_all_summaries()
     journalist = tf.train.SummaryWriter(LOG_DIR)
 
     # Brain maps from observation to Q values for different actions.
@@ -177,6 +179,8 @@ else:
     session.run(current_controller.target_network_update)
     # graph was not available when journalist was created  
     journalist.add_graph(session.graph_def)
+    saver = tf.train.Saver()
+    
     
 FPS          = 30
 ACTION_EVERY = 3
@@ -188,7 +192,7 @@ else:
     WAIT, VISUALIZE_EVERY = True, 1
 
 
-iterations = 50
+iterations = 10
 rewards = [None]*iterations
 
 for i in range(iterations):    
@@ -204,7 +208,7 @@ for i in range(iterations):
                         wait=WAIT,
                         disable_training=False,
                         simulation_resolution=0.01, #0.001
-                        save_path="/Users/tylerbonnell/Documents/gitRepro/tensorflow-deepq/data/testData")
+                        save_path="/Users/tylerbonnell/Documents/RL_gif")
     except IndexError: #end of GPS file
         print("Interrupted")
         g.return_to_start()
@@ -217,8 +221,15 @@ for i in range(iterations):
     current_controller.target_q_network.input_layer.Ws[0].eval()
 
     g.plot_reward(smoothing=100)
+    
+    saver.save(session, LOG_DIR, global_step=i)
+    #summary_str = session.run(summary_op, feed_dict=feed_dict)
+    #journalist.add_summary(summary_str, i)
 
 
 print("iterations completed")
+
+saver.restore(session, LOG_DIR)
+#do_eval(session)
 #g.plot_reward(smoothing=100)
-print(rewards)
+print(rewards)  
