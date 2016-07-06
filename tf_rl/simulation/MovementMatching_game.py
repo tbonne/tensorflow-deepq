@@ -118,7 +118,8 @@ class MovementGame(object):
         #self.hero.speed *= 0.5
         #self.hero.speed += self.directions[action_id] * self.settings["delta_v"]
         self.hero.speed += self.directions[action_id] * self.settings["delta_v"]
-        self.hero.speed = self.unit_vector(self.hero.speed)
+        if self.hero.speed.magnitude()>0:
+            self.hero.speed = self.unit_vector(self.hero.speed)
         #if self.hero.speed
         #print(self.hero.speed)
         #self.hero.predTravelD = self.unit_vector(self.hero.speed)

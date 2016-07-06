@@ -178,6 +178,7 @@ class DiscreteDeepQ(object):
                                               self.random_action_probability)
 
         if random.random() < exploration_p:
+            print("Random Action taken!!!! Need to make sure this only occurs in the training phase!!!")
             return random.randint(0, self.num_actions - 1)
         else:
             return self.s.run(self.predicted_actions, {self.observation: observation[np.newaxis,:]})[0]

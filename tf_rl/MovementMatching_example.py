@@ -137,6 +137,13 @@ with open ('2hourTrack.csv', newline='') as csvfile:
     next(gpsreader)
     for row in gpsreader:
         gpsdata.append(row)
+        
+gpsdata_validation = []
+with open ('longToWide_0408_4h.csv', newline='') as csvfile: 
+    gpsreader_val = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_NONNUMERIC)
+    next(gpsreader_val)
+    for row in gpsreader_val:
+        gpsdata_validation.append(row)
 
 #print(gpsdata[0][1]) #time step, then the column number
 
@@ -171,10 +178,10 @@ else:
 
     # DiscreteDeepQ object
     current_controller = DiscreteDeepQ(g.observation_size, g.num_actions, brain, optimizer, session,
-                                       discount_rate=0.99, exploration_period=3500, max_experience=7000, 
+                                       discount_rate=0.99, exploration_period=7195*5, max_experience=7000, 
                                        store_every_nth=4, train_every_nth=4,
                                        summary_writer=journalist)
-    
+    #exploration_period=3500
     session.run(tf.initialize_all_variables())
     session.run(current_controller.target_network_update)
     # graph was not available when journalist was created  
@@ -183,7 +190,7 @@ else:
     
     
 FPS          = 30
-ACTION_EVERY = 3
+ACTION_EVERY = 1
     
 fast_mode = True
 if fast_mode:
@@ -192,7 +199,7 @@ else:
     WAIT, VISUALIZE_EVERY = True, 1
 
 
-iterations = 10
+iterations = 100
 rewards = [None]*iterations
 
 for i in range(iterations):    
@@ -220,16 +227,47 @@ for i in range(iterations):
 
     current_controller.target_q_network.input_layer.Ws[0].eval()
 
-    g.plot_reward(smoothing=100)
+    g.plot_reward(smoothing=10)
     
     saver.save(session, LOG_DIR, global_step=i)
     #summary_str = session.run(summary_op, feed_dict=feed_dict)
     #journalist.add_summary(summary_str, i)
 
+ 
+print("Training iterations completed")
+print("")
+print("Validation starting")
+#saver.restore(session, LOG_DIR)
 
-print("iterations completed")
+g_validation = MovementGame(current_settings, gpsdata_validation)
+iterations_val = 10
+rewards_val = [None]*iterations_val
 
-saver.restore(session, LOG_DIR)
+for i in range(iterations_val):    
+    try:
+        #for d in ['/cpu:1', '/cpu:2', '/cpu:3']:
+            with tf.device("/cpu:0"):
+            #with tf.device(d):
+                simulate(simulation=g_validation,
+                        controller=current_controller,
+                        fps=FPS,
+                        visualize_every=VISUALIZE_EVERY,
+                        action_every=ACTION_EVERY,
+                        wait=WAIT,
+                        disable_training=True,
+                        simulation_resolution=0.01, #0.001
+                        save_path="/Users/tylerbonnell/Documents/RL_gif/val")
+    except IndexError: #end of GPS file
+        print("Interrupted")
+        g_validation.return_to_start()
+        rewards_val[i]=g_validation.get_total_rewards()
+
+print("Training rewards") 
+print(rewards) 
+print("Validation rewards") 
+print(rewards_val)
+
+print("Validation completed")
 #do_eval(session)
 #g.plot_reward(smoothing=100)
-print(rewards)  
+
