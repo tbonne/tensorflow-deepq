@@ -34,9 +34,7 @@ current_settings = {
         'groupMate15',
         'groupMate16',
         'groupMate17',
-        'groupMate18',
-        'groupMate19',
-        'groupMate20',
+        'groupMate18'
     ],
     'colors': {
         'hero':   'red',
@@ -57,20 +55,18 @@ current_settings = {
         'groupMate15': 'magenta',
         'groupMate16': 'magenta',
         'groupMate17': 'magenta',
-        'groupMate18': 'magenta',
-        'groupMate19': 'magenta',
-        'groupMate20': 'magenta',
+        'groupMate18': 'magenta'
     },
     'object_reward': {
         'friend': 0.1,
     },
     'min_offset': 0.785,
     'hero_bounces_off_walls': False,
-    'world_size': (1000,1000),
+    'world_size': (3200,1550),
     'hero_initial_position': [826.7389, 761.1064],
     'hero_initial_speed':    [10,   0],
     "maximum_speed":         [50, 50],
-    "object_radius": 5.0,
+    "object_radius": 10.0,
     "num_objects": {
         "groupMate1" : 1,
         "groupMate2" : 1,
@@ -89,10 +85,7 @@ current_settings = {
         "groupMate15" : 1,
         "groupMate16" : 1,
         "groupMate17" : 1,
-        "groupMate18" : 1,
-        "groupMate19" : 1,
-        "groupMate20" : 1,
-        
+        "groupMate18" : 1
     },
     "column_ID": {
         "groupMate1" : 3,
@@ -112,9 +105,7 @@ current_settings = {
         "groupMate15" : 31,
         "groupMate16" : 33,
         "groupMate17" : 35,
-        "groupMate18" : 37,
-        "groupMate19" : 39,
-        "groupMate20" : 41,
+        "groupMate18" : 37
         
     },                
     "num_observation_lines" : 32,
@@ -132,14 +123,15 @@ current_settings = {
 
 #import observed movement data (GPS)
 gpsdata = []
-with open ('2hourTrack.csv', newline='') as csvfile:
+with open ('track12h_03_stand.csv', newline='') as csvfile:
     gpsreader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_NONNUMERIC)
     next(gpsreader)
     for row in gpsreader:
         gpsdata.append(row)
+#2hourTrack
         
 gpsdata_validation = []
-with open ('longToWide_0408_4h.csv', newline='') as csvfile: 
+with open ('track12h_04_stand.csv', newline='') as csvfile: 
     gpsreader_val = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_NONNUMERIC)
     next(gpsreader_val)
     for row in gpsreader_val:
@@ -178,9 +170,10 @@ else:
 
     # DiscreteDeepQ object
     current_controller = DiscreteDeepQ(g.observation_size, g.num_actions, brain, optimizer, session,
-                                       discount_rate=0.99, exploration_period=7195*5, max_experience=7000, 
+                                       discount_rate=0.99, exploration_period=7000, max_experience=7000, 
                                        store_every_nth=4, train_every_nth=4,
                                        summary_writer=journalist)
+    
     #exploration_period=3500
     session.run(tf.initialize_all_variables())
     session.run(current_controller.target_network_update)
@@ -199,7 +192,7 @@ else:
     WAIT, VISUALIZE_EVERY = True, 1
 
 
-iterations = 100
+iterations = 5
 rewards = [None]*iterations
 
 for i in range(iterations):    
@@ -233,14 +226,20 @@ for i in range(iterations):
     #summary_str = session.run(summary_op, feed_dict=feed_dict)
     #journalist.add_summary(summary_str, i)
 
- 
+save_path = saver.save(session, "/Users/tylerbonnell/Documents/RL_trained_agent/model.ckpt")
+print("Model saved in file: %s" % save_path)
+
 print("Training iterations completed")
 print("")
 print("Validation starting")
 #saver.restore(session, LOG_DIR)
 
 g_validation = MovementGame(current_settings, gpsdata_validation)
-iterations_val = 10
+#validation_controller = DiscreteDeepQ(g_validation.observation_size, g_validation.num_actions, brain, optimizer, session,
+# #                                      discount_rate=0.99, exploration_period=0, max_experience=7000, 
+#                                       store_every_nth=9999999, train_every_nth=9999999,
+#                                       summary_writer=journalist)
+iterations_val = 1
 rewards_val = [None]*iterations_val
 
 for i in range(iterations_val):    
