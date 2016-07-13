@@ -165,7 +165,7 @@ class DiscreteDeepQ(object):
         self.summarize = tf.merge_all_summaries()
         self.no_op1    = tf.no_op()
 
-    def action(self, observation):
+    def action(self, observation, validationStep):
         """Given observation returns the action that should be chosen using
         DeepQ learning strategy. Does not backprop."""
         assert len(observation.shape) == 1, \
@@ -177,7 +177,7 @@ class DiscreteDeepQ(object):
                                               1.0,
                                               self.random_action_probability)
 
-        if random.random() < exploration_p:
+        if random.random() < exploration_p and validationStep==False:
             print("Random Action taken!!!! Need to make sure this only occurs in the training phase!!!")
             return random.randint(0, self.num_actions - 1)
         else:

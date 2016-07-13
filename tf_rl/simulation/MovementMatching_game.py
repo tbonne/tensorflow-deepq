@@ -21,6 +21,7 @@ class GameObject(object):
         self.obj_type = obj_type
         self.position = position
         self.speed    = speed
+        self.obsSpeed = Vector2(0,0)
         self.bounciness = 1.0
         self.colID = colID
 
@@ -98,15 +99,16 @@ class MovementGame(object):
 
         self.object_reward = 0
         self.collected_rewards = []
+        self.xylist = []
  
         # every observation_line sees one of objects or wall and
         # two numbers representing speed of the object (if applicable)
         self.eye_observation_size = len(self.settings["objects"]) + 3
         # additionally there are two numbers representing agents own speed and position.
-        self.observation_size = self.eye_observation_size * len(self.observation_lines) + 2 + 2
+        self.observation_size = self.eye_observation_size * len(self.observation_lines) + 2 + 2 + 2
 
-        self.directions = [Vector2(*d) for d in [[1,0], [0,1], [-1,0], [0,-1], [0.0,0.0]]]
-        #self.directions = [Vector2(*d) for d in [[1,0],[0.707,0.707], [0,1],[-0.707,0.707], [-1,0],[-0.707,-0.707],[0,-1],[0.707,-0.707],[0.0,0.0]]]
+        #self.directions = [Vector2(*d) for d in [[1,0], [0,1], [-1,0], [0,-1], [0.0,0.0], [-1,-1]]]
+        self.directions = [Vector2(*d) for d in [[1,0],[0.707,0.707], [0,1],[-0.707,0.707], [-1,0],[-0.707,-0.707],[0,-1],[0.707,-0.707],[0.0,0.0]]]
         #self.directions = [Vector2(*d) for d in [[1],[-1], [0]]]
         self.num_actions      = len(self.directions)
 
@@ -115,12 +117,21 @@ class MovementGame(object):
     def perform_action(self, action_id):
         """Change speed to one of hero vectors"""
         assert 0 <= action_id < self.num_actions
+        #action_id = random.randint(0, self.num_actions - 1) #used to quantify the range reward accumulation due to random chance
         #self.hero.speed *= 0.5
         #self.hero.speed += self.directions[action_id] * self.settings["delta_v"]
-        self.hero.speed += self.directions[action_id] * self.settings["delta_v"]
-        if self.hero.speed.magnitude()>0:
-            self.hero.speed = self.unit_vector(self.hero.speed)
-        #if self.hero.speed
+        #if action_id==5:
+            #self.hero.speed *= 0.5
+        #else:
+            #self.hero.speed += self.directions[action_id] * self.settings["delta_v"]
+        
+        self.hero.speed = self.directions[action_id]
+        
+        if(self.timeStep>1):
+            obs_t0 = [self.GPS[self.timeStep][0],self.GPS[self.timeStep][1]]
+            obs_t1 = [self.GPS[self.timeStep-1][0],self.GPS[self.timeStep-1][1]]
+            self.hero.obsSpeed = Vector2(obs_t1[0]-obs_t0[0],obs_t1[1]-obs_t0[1])
+        
         #print(self.hero.speed)
         #self.hero.predTravelD = self.unit_vector(self.hero.speed)
 
@@ -136,7 +147,7 @@ class MovementGame(object):
         self.objects.append(GameObject(position, speed, obj_type, self.settings,colID))
 
     def step(self, dt):
-        """Simulate all the objects for a given ammount of time.
+        """Simulate all the objects for a given amount of time.
         i'll need to change this so that the positions update based on the gps data
         Also resolve collisions with the hero"""
         for obj in self.objects + [self.hero] :
@@ -153,53 +164,71 @@ class MovementGame(object):
         return (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2
 
     def matchingMovements(self):
-        """new command to reward agent based on match with observed travel: using direction only right now..."""
+        """new reward function based on match with observed travel"""
         diff_angle = 9999
         #sim = [self.hero.position[0], self.hero.position[1]]
         obs_t0 = [self.GPS[self.timeStep][0],self.GPS[self.timeStep][1]]
         obs_t1 = [self.GPS[self.timeStep+1][0],self.GPS[self.timeStep+1][1]]
-        obs_direction = Vector2(obs_t1[0]-obs_t0[0],obs_t1[1]-obs_t0[1])
+        obsSpeed_plusOne = Vector2(obs_t1[0]-obs_t0[0],obs_t1[1]-obs_t0[1])
         pred_direction = self.hero.speed
         
-        if obs_direction.magnitude()<self.settings["stopped_distance"]:
-            if pred_direction.magnitude()<self.settings["stopped_distance"]:
+        #if self.hero.speed.magnitude()>self.settings["stopped_distance"]:
+        #    pred_direction = self.unit_vector(self.hero.speed)
+        #else:
+        #    pred_direction = self.hero.speed*0
+        
+        #rewards based on distance between vectors (allows for magnitude of speed to play a role, as opposed to just their angles)
+        #dist = self.distance_between(obs_direction,pred_direction)
+        #if dist< self.settings["min_offset"]:
+        #    self.object_reward += self.settings["max_rewards"] * (1 - (dist / self.settings["min_offset"]))
+        
+        if obsSpeed_plusOne.magnitude()<self.settings["stopped_distance"]:
+            if pred_direction[0]==0 and pred_direction[1]==0:
                 self.object_reward += self.settings["positive_reward"]
             else:
                 self.object_reward += self.settings["negative_reward"]
         else:
             if pred_direction.magnitude()>self.settings["stopped_distance"]:
-                diff_angle = abs(self.angle_between2(obs_direction, pred_direction))
+                diff_angle = abs(self.angle_between2(obsSpeed_plusOne, pred_direction))
                 
         #reward based on offset from focal animals actual path
         #if sim[0]==0. and sim[1]==0.:
-        #   """nothing"""        
+        #   nothing        
         #else: 
         #    totalOffset = self.distance_between(sim, obs) 
         
         if diff_angle< self.settings["min_offset"]:
             self.object_reward += self.settings["max_rewards"] * (1 - (diff_angle / self.settings["min_offset"]))
-                   
         else:
             self.object_reward += self.settings["negative_reward"]
             
         #if diff_angle < self.previousOffset:
         #    self.object_reward += self.settings["positive_reward"]
-            
+        
         #speedNow = [self.hero.speed[0], self.hero.speed[1]]
         #velocityNow = self.total_speed(speedNow)
         #self.object_reward += velocityNow*self.settings["movement_penalty"]
         
-        print("Total offset in angle = ", diff_angle," Change = ",diff_angle - self.previousOffset,"  --  Rewards given ",self.object_reward)
-        print("Obs = ", obs_direction,"  pred = ",pred_direction)
-        self.previousOffset = diff_angle
         
-        
-        #"""update hero to have the same speed and position as the observed data"""
+        #update hero to have the same speed and position as the observed data
         #if(self.timeStep>1 and self.deltaT>self.settings["deltaT"]):
         #   self.hero.position = Point2(obs[0],obs[1])
         #    self.hero.speed = Vector2(self.GPS[self.timeStep][0]-self.GPS[self.timeStep-1][0], self.GPS[self.timeStep][1]-self.GPS[self.timeStep-1][1])
         #   self.deltaT=0
         
+        print("Total offset in angle = ", diff_angle," Change = ",diff_angle - self.previousOffset,"  --  Rewards given ",self.object_reward)
+        print("Obs = ", obsSpeed_plusOne,"  pred = ",pred_direction)
+        self.previousOffset = diff_angle
+        if pred_direction.magnitude()<=0:
+            if obsSpeed_plusOne.magnitude()<=0:
+                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], 999,999,999, 999,999,999, diff_angle] )
+            else:
+                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], self.angle_between1([1,0], obsSpeed_plusOne),obsSpeed_plusOne[0],obsSpeed_plusOne[1], 999,999,999, diff_angle] )
+        else:
+            if obsSpeed_plusOne.magnitude()<=0:
+                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], 999,999,999, self.angle_between1([1,0],pred_direction),pred_direction[0],pred_direction[1],diff_angle] )
+            else:
+                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], self.angle_between1([1,0], obsSpeed_plusOne),obsSpeed_plusOne[0],obsSpeed_plusOne[1], self.angle_between1([1,0],pred_direction),pred_direction[0],pred_direction[1],diff_angle] )
         
     def unit_vector(self, vector):
         """ Returns the unit vector of the vector.  """
@@ -208,6 +237,11 @@ class MovementGame(object):
 
     def angle_between2(self, v1, v2):
         v1_u = self.unit_vector(v1)
+        v2_u = self.unit_vector(v2)
+        return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+    
+    def angle_between1(self, v1, v2):
+        v1_u = v1
         v2_u = self.unit_vector(v2)
         return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
     
@@ -321,9 +355,11 @@ class MovementGame(object):
             assert num_obj_types + 2 == self.eye_observation_size
             observation_offset += self.eye_observation_size
 
-        observation[observation_offset]     = self.hero.speed[0] / max_speed_x
-        observation[observation_offset + 1] = self.hero.speed[1] / max_speed_y
-        observation_offset += 2
+        observation[observation_offset]     = self.hero.speed[0]     #this is my predicted speed (action taken by the agent) at this time point
+        observation[observation_offset + 1] = self.hero.speed[1] 
+        observation[observation_offset + 2] = self.hero.obsSpeed[0]  #this is the observed speed leading to this time point (previous direction of travel)
+        observation[observation_offset + 3] = self.hero.obsSpeed[1] 
+        observation_offset += 4
         
         # add normalized locaiton of the hero in environment        
         observation[observation_offset]     = self.hero.position[0] / 350.0 - 1.0
@@ -369,6 +405,9 @@ class MovementGame(object):
         sumL = sum(self.collected_rewards) 
         del self.collected_rewards[:] #reinitialize the rewards list
         return sumL
+    
+    def get_xylist(self):
+        return self.xylist
     
     def return_to_start(self):
         self.timeStep=0

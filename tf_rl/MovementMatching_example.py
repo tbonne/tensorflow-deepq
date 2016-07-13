@@ -14,6 +14,7 @@ import csv
 #LOG_DIR = tempfile.mkdtemp()
 LOG_DIR = "/tmp/mnist_logs"
 print(LOG_DIR)
+SAVE_DIR = "/Users/tylerbonnell/Documents/RL_trained_agent/rla_03/model.ckpt"
 
 current_settings = {
     'objects': [
@@ -64,9 +65,9 @@ current_settings = {
     'hero_bounces_off_walls': False,
     'world_size': (3200,1550),
     'hero_initial_position': [826.7389, 761.1064],
-    'hero_initial_speed':    [10,   0],
+    'hero_initial_speed':    [1,   0],
     "maximum_speed":         [50, 50],
-    "object_radius": 10.0,
+    "object_radius": 20.0,
     "num_objects": {
         "groupMate1" : 1,
         "groupMate2" : 1,
@@ -112,23 +113,23 @@ current_settings = {
     "observation_line_length": 100.,
     "tolerable_distance_to_wall": 50,
     "wall_distance_penalty":  -0.0,
-    "delta_v": 1,
+    "delta_v": 0.5,
     'max_rewards': 4,
-    "negative_reward":-0.001,
-    "positive_reward":0.001,
+    "negative_reward":0.0,
+    "positive_reward":1,
     "movement_penalty":-0.001,
     "deltaT":120,
-    "stopped_distance":0.000001
+    "stopped_distance":0.01
 }
 
 #import observed movement data (GPS)
 gpsdata = []
-with open ('track12h_03_stand.csv', newline='') as csvfile:
+with open ('track12h_03_stand_sub.csv', newline='') as csvfile:
     gpsreader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_NONNUMERIC)
     next(gpsreader)
     for row in gpsreader:
         gpsdata.append(row)
-#2hourTrack
+#2hourTrack, track12h_03_stand, track12h_03_stand_sub
         
 gpsdata_validation = []
 with open ('track12h_04_stand.csv', newline='') as csvfile: 
@@ -171,7 +172,7 @@ else:
     # DiscreteDeepQ object
     current_controller = DiscreteDeepQ(g.observation_size, g.num_actions, brain, optimizer, session,
                                        discount_rate=0.99, exploration_period=7000, max_experience=7000, 
-                                       store_every_nth=4, train_every_nth=4,
+                                       store_every_nth=1, train_every_nth=1,
                                        summary_writer=journalist)
     
     #exploration_period=3500
@@ -192,7 +193,7 @@ else:
     WAIT, VISUALIZE_EVERY = True, 1
 
 
-iterations = 5
+iterations = 2
 rewards = [None]*iterations
 
 for i in range(iterations):    
@@ -207,12 +208,14 @@ for i in range(iterations):
                         action_every=ACTION_EVERY,
                         wait=WAIT,
                         disable_training=False,
-                        simulation_resolution=0.01, #0.001
-                        save_path="/Users/tylerbonnell/Documents/RL_gif")
+                        simulation_resolution=0.1, #0.001
+                        save_path="/Users/tylerbonnell/Documents/RL_gif",
+                        validationStep=False)
     except IndexError: #end of GPS file
         print("Interrupted")
         g.return_to_start()
         rewards[i]=g.get_total_rewards()
+        xyout = g.get_xylist()
     
     session.run(current_controller.target_network_update)
 
@@ -222,24 +225,49 @@ for i in range(iterations):
 
     g.plot_reward(smoothing=10)
     
-    saver.save(session, LOG_DIR, global_step=i)
+    
+    with open('xyout.csv', 'w', newline='') as csvfile:
+        writerOUT = csv.writer(csvfile, delimiter=' ',
+                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        for item in xyout:
+            writerOUT.writerow([item,])
+    
+    #saver.save(session, LOG_DIR, global_step=i)
     #summary_str = session.run(summary_op, feed_dict=feed_dict)
     #journalist.add_summary(summary_str, i)
 
-save_path = saver.save(session, "/Users/tylerbonnell/Documents/RL_trained_agent/model.ckpt")
+save_path = saver.save(session, SAVE_DIR)
 print("Model saved in file: %s" % save_path)
-
+#session.close()
 print("Training iterations completed")
 print("")
-print("Validation starting")
-#saver.restore(session, LOG_DIR)
 
+
+
+
+
+
+print("Validation starting")
+
+#start a new Game
 g_validation = MovementGame(current_settings, gpsdata_validation)
-#validation_controller = DiscreteDeepQ(g_validation.observation_size, g_validation.num_actions, brain, optimizer, session,
-# #                                      discount_rate=0.99, exploration_period=0, max_experience=7000, 
-#                                       store_every_nth=9999999, train_every_nth=9999999,
-#                                       summary_writer=journalist)
-iterations_val = 1
+
+#initialize and load new session and graph
+#session_val = tf.InteractiveSession()
+saver.restore(session, SAVE_DIR)
+
+#build controller
+#brain_val = MLP([g.observation_size,], [200, 200, g_validation.num_actions], 
+#    [tf.tanh, tf.tanh, tf.identity])
+
+#optimizer_val = tf.train.RMSPropOptimizer(learning_rate= 0.000, decay=0.0)
+
+#DiscreteDeepQ object
+#current_controller = DiscreteDeepQ(g_validation.observation_size, g_validation.num_actions, brain_val, optimizer_val, session_val,
+#                                    discount_rate=0.99, exploration_period=0, max_experience=7000, 
+#                                    store_every_nth=4, train_every_nth=9999999) #i.e. never train
+
+iterations_val = 0
 rewards_val = [None]*iterations_val
 
 for i in range(iterations_val):    
@@ -255,7 +283,8 @@ for i in range(iterations_val):
                         wait=WAIT,
                         disable_training=True,
                         simulation_resolution=0.01, #0.001
-                        save_path="/Users/tylerbonnell/Documents/RL_gif/val")
+                        save_path="/Users/tylerbonnell/Documents/RL_gif/val",
+                        validationStep=True)
     except IndexError: #end of GPS file
         print("Interrupted")
         g_validation.return_to_start()

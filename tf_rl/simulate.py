@@ -18,7 +18,8 @@ def simulate(simulation,
              simulation_resolution=None,
              wait=False,
              disable_training=False,
-             save_path="/Users/tylerbonnell/Documents/gitRepro/tensorflow-deepq/data"):
+             save_path="/Users/tylerbonnell/Documents/gitRepro/tensorflow-deepq/data",
+             validationStep=False):
     
     
     """Start the simulation. Performs three tasks
@@ -88,7 +89,7 @@ def simulate(simulation,
                 controller.store(last_observation, last_action, reward, new_observation)
 
             # act
-            new_action = controller.action(new_observation)
+            new_action = controller.action(new_observation, validationStep)
             simulation.perform_action(new_action)
 
             #train
