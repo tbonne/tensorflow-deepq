@@ -1,5 +1,9 @@
+'''
+Created on Jul 14, 2016
 
-from __future__ import print_function
+@author: tylerbonnell
+'''
+
 import numpy as np
 import tempfile
 import tensorflow as tf
@@ -14,8 +18,9 @@ import csv
 #LOG_DIR = tempfile.mkdtemp()
 LOG_DIR = "/tmp/mnist_logs"
 print(LOG_DIR)
-SAVE_DIR = "/Users/tylerbonnell/Documents/RL_trained_agent/rla_03_test/model.ckpt"
+SAVE_DIR = "/Users/tylerbonnell/Documents/RL_trained_agent/rla_03_test/model.ckpt"    #this loads the trained rla 
 
+#define the context from which we would like to get predictions from the rla
 current_settings = {
     'objects': [
         'groupMate1',
@@ -138,113 +143,6 @@ with open ('track12h_04_stand.csv', newline='') as csvfile:
     for row in gpsreader_val:
         gpsdata_validation.append(row)
 
-#print(gpsdata[0][1]) #time step, then the column number
-
-# create the game simulator
-g = MovementGame(current_settings, gpsdata)
-
-
-human_control = False
-
-if human_control:
-    # WSAD CONTROL (requires extra setup - check out README)
-    current_controller = HumanController({b"w": 3, b"d": 0, b"s": 1,b"a": 2,}) 
-else:
-    # Tensorflow business - it is always good to reset a graph before creating a new controller.
-    tf.reset_default_graph()
-    session = tf.InteractiveSession()
-
-    # This little guy will let us run tensorboard
-    #      tensorboard --logdir [LOG_DIR]
-    summary_op = tf.merge_all_summaries()
-    journalist = tf.train.SummaryWriter(LOG_DIR)
-
-    # Brain maps from observation to Q values for different actions.
-    # Here it is a done using a multi layer perceptron with 2 hidden
-    # layers
-    brain = MLP([g.observation_size,], [200, 200, g.num_actions], 
-                [tf.tanh, tf.tanh, tf.identity])
-    
-    # The optimizer to use. Here we use RMSProp as recommended
-    # by the publication
-    optimizer = tf.train.RMSPropOptimizer(learning_rate= 0.001, decay=0.9)
-
-    # DiscreteDeepQ object
-    current_controller = DiscreteDeepQ(g.observation_size, g.num_actions, brain, optimizer, session,
-                                       discount_rate=0.99, exploration_period=7000, max_experience=7000, 
-                                       store_every_nth=1, train_every_nth=1,
-                                       summary_writer=journalist)
-    
-    #exploration_period=3500
-    session.run(tf.initialize_all_variables())
-    session.run(current_controller.target_network_update)
-    # graph was not available when journalist was created  
-    journalist.add_graph(session.graph_def)
-    saver = tf.train.Saver()
-    
-    
-FPS          = 30
-ACTION_EVERY = 1
-    
-fast_mode = True
-if fast_mode:
-    WAIT, VISUALIZE_EVERY = False, 20
-else:
-    WAIT, VISUALIZE_EVERY = True, 1
-
-
-iterations = 30
-rewards = [None]*iterations
-
-for i in range(iterations):    
-    try:
-        #for d in ['/cpu:1', '/cpu:2', '/cpu:3']:
-            with tf.device("/gpu:0"):
-            #with tf.device(d):
-                simulate(simulation=g,
-                        controller=current_controller,
-                        fps=FPS,
-                        visualize_every=VISUALIZE_EVERY,
-                        action_every=ACTION_EVERY,
-                        wait=WAIT,
-                        disable_training=False,
-                        simulation_resolution=0.1, #0.001
-                        save_path="/Users/tylerbonnell/Documents/RL_gif",
-                        validationStep=False)
-    except IndexError: #end of GPS file
-        print("Interrupted")
-        g.return_to_start()
-        rewards[i]=g.get_total_rewards()
-        xyout = g.get_xylist()
-    
-    session.run(current_controller.target_network_update)
-
-    current_controller.q_network.input_layer.Ws[0].eval()
-
-    current_controller.target_q_network.input_layer.Ws[0].eval()
-
-    g.plot_reward(smoothing=10)
-    
-    
-    #with open('xyout.csv', 'w', newline='') as csvfile:
-    #    writerOUT = csv.writer(csvfile, delimiter=' ',
-    #                        quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    #    for item in xyout:
-    #        writerOUT.writerow([item,])
-    
-    #saver.save(session, LOG_DIR, global_step=i)
-    #summary_str = session.run(summary_op, feed_dict=feed_dict)
-    #journalist.add_summary(summary_str, i)
-
-#save_path = saver.save(session, SAVE_DIR)
-#print("Model saved in file: %s" % save_path)
-
-session.close()
-print("Training iterations completed")
-print("")
-
-
-
 
 
 
@@ -271,7 +169,19 @@ saver_val = tf.train.Saver()
 saver_val.restore(session_val, SAVE_DIR)
 print(session_val.run(tf.all_variables()))
 
-iterations_val = 0
+
+FPS          = 30
+ACTION_EVERY = 1
+    
+fast_mode = True
+if fast_mode:
+    WAIT, VISUALIZE_EVERY = False, 20
+else:
+    WAIT, VISUALIZE_EVERY = True, 1
+
+
+
+iterations_val = 1
 rewards_val = [None]*iterations_val
 
 for i in range(iterations_val):    
@@ -294,12 +204,9 @@ for i in range(iterations_val):
         g_validation.return_to_start()
         rewards_val[i]=g_validation.get_total_rewards()
 
-print("Training rewards") 
-print(rewards) 
 print("Validation rewards") 
 print(rewards_val)
 
 print("Validation completed")
 #do_eval(session)
 #g.plot_reward(smoothing=100)
-
