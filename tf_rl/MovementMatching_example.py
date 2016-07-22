@@ -119,12 +119,12 @@ current_settings = {
     "positive_reward":1,
     "movement_penalty":-0.001,
     "deltaT":120,
-    "stopped_distance":0.01
+    "stopped_distance":0.2
 }
 
 #import observed movement data (GPS)
 gpsdata = []
-with open ('track12h_03_stand_sub.csv', newline='') as csvfile:
+with open ('track12h_03_stand.csv', newline='') as csvfile:
     gpsreader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_NONNUMERIC)
     next(gpsreader)
     for row in gpsreader:
@@ -193,7 +193,7 @@ else:
     WAIT, VISUALIZE_EVERY = True, 1
 
 
-iterations = 30
+iterations = 150
 rewards = [None]*iterations
 
 for i in range(iterations):    
@@ -208,14 +208,13 @@ for i in range(iterations):
                         action_every=ACTION_EVERY,
                         wait=WAIT,
                         disable_training=False,
-                        simulation_resolution=0.1, #0.001
+                        simulation_resolution=0.01, #0.001
                         save_path="/Users/tylerbonnell/Documents/RL_gif",
                         validationStep=False)
     except IndexError: #end of GPS file
         print("Interrupted")
         g.return_to_start()
         rewards[i]=g.get_total_rewards()
-        xyout = g.get_xylist()
     
     session.run(current_controller.target_network_update)
 
@@ -225,12 +224,6 @@ for i in range(iterations):
 
     g.plot_reward(smoothing=10)
     
-    
-    #with open('xyout.csv', 'w', newline='') as csvfile:
-    #    writerOUT = csv.writer(csvfile, delimiter=' ',
-    #                        quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    #    for item in xyout:
-    #        writerOUT.writerow([item,])
     
     #saver.save(session, LOG_DIR, global_step=i)
     #summary_str = session.run(summary_op, feed_dict=feed_dict)
@@ -269,9 +262,9 @@ current_controller_val = DiscreteDeepQ(g_validation.observation_size, g_validati
                                     store_every_nth=1, train_every_nth=9999999) #i.e. never train
 saver_val = tf.train.Saver()
 saver_val.restore(session_val, SAVE_DIR)
-print(session_val.run(tf.all_variables()))
+#print(session_val.run(tf.all_variables()))
 
-iterations_val = 0
+iterations_val = 30
 rewards_val = [None]*iterations_val
 
 for i in range(iterations_val):    
@@ -286,14 +279,28 @@ for i in range(iterations_val):
                         action_every=ACTION_EVERY,
                         wait=WAIT,
                         disable_training=True,
-                        simulation_resolution=0.1, #0.001
+                        simulation_resolution=0.01, #0.001
                         save_path="/Users/tylerbonnell/Documents/RL_gif/val",
                         validationStep=True)
     except IndexError: #end of GPS file
         print("Interrupted")
         g_validation.return_to_start()
         rewards_val[i]=g_validation.get_total_rewards()
+        #xyout = g.get_xylist()
+        if iterations_val - i <= 2:
+            xyout = g.get_xylist()
+        else:
+            g.clear_xylist()
+        
 
+print("iterations_val = ",i)
+    
+with open('xyout.csv', 'w', newline='') as csvfile:
+    writerOUT = csv.writer(csvfile, delimiter=' ',
+                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    for item in xyout:
+        writerOUT.writerow([item,])
+    
 print("Training rewards") 
 print(rewards) 
 print("Validation rewards") 

@@ -221,14 +221,14 @@ class MovementGame(object):
         self.previousOffset = diff_angle
         if pred_direction.magnitude()<=0:
             if obsSpeed_plusOne.magnitude()<=0:
-                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], 999,999,999, 999,999,999, diff_angle] )
+                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], 999,999,999, 999,999,999, diff_angle,self.object_reward] )
             else:
-                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], self.angle_between1([1,0], obsSpeed_plusOne),obsSpeed_plusOne[0],obsSpeed_plusOne[1], 999,999,999, diff_angle] )
+                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], self.angle_between1([1,0], obsSpeed_plusOne),obsSpeed_plusOne[0],obsSpeed_plusOne[1], 999,999,999, diff_angle,self.object_reward] )
         else:
             if obsSpeed_plusOne.magnitude()<=0:
-                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], 999,999,999, self.angle_between1([1,0],pred_direction),pred_direction[0],pred_direction[1],diff_angle] )
+                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], 999,999,999, self.angle_between1([1,0],pred_direction),pred_direction[0],pred_direction[1],diff_angle,self.object_reward] )
             else:
-                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], self.angle_between1([1,0], obsSpeed_plusOne),obsSpeed_plusOne[0],obsSpeed_plusOne[1], self.angle_between1([1,0],pred_direction),pred_direction[0],pred_direction[1],diff_angle] )
+                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], self.angle_between1([1,0], obsSpeed_plusOne),obsSpeed_plusOne[0],obsSpeed_plusOne[1], self.angle_between1([1,0],pred_direction),pred_direction[0],pred_direction[1],diff_angle,self.object_reward] )
         
     def unit_vector(self, vector):
         """ Returns the unit vector of the vector.  """
@@ -408,6 +408,9 @@ class MovementGame(object):
     
     def get_xylist(self):
         return self.xylist
+    
+    def clear_xylist(self):
+        del self.xylist[:]
     
     def return_to_start(self):
         self.timeStep=0
