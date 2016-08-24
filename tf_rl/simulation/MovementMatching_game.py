@@ -125,15 +125,17 @@ class MovementGame(object):
         #else:
             #self.hero.speed += self.directions[action_id] * self.settings["delta_v"]
         
+        #update my travel direction
         self.hero.speed = self.directions[action_id]
         
+        #update the true observed travel direction
         if(self.timeStep>1):
             obs_t0 = [self.GPS[self.timeStep][0],self.GPS[self.timeStep][1]]
             obs_t1 = [self.GPS[self.timeStep-1][0],self.GPS[self.timeStep-1][1]]
             self.hero.obsSpeed = Vector2(obs_t1[0]-obs_t0[0],obs_t1[1]-obs_t0[1])
         
-        #print(self.hero.speed)
-        #self.hero.predTravelD = self.unit_vector(self.hero.speed)
+        #record: x,y, obs direction, pred direction
+        self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], self.hero.obsSpeed[0],self.hero.obsSpeed[1],self.hero.speed[0],self.hero.speed[1]] )            
 
     def spawn_object(self, obj_type, colID):
         """Spawn object of a given type and add it to the objects array"""
@@ -218,18 +220,7 @@ class MovementGame(object):
         
         print("Total offset in angle = ", diff_angle," Change = ",diff_angle - self.previousOffset,"  --  Rewards given ",self.object_reward)
         print("Obs = ", obsSpeed_plusOne,"  pred = ",pred_direction)
-        self.previousOffset = diff_angle
-        if pred_direction.magnitude()<=0:
-            if obsSpeed_plusOne.magnitude()<=0:
-                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], 999,999,999, 999,999,999, diff_angle,self.object_reward] )
-            else:
-                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], self.angle_between1([1,0], obsSpeed_plusOne),obsSpeed_plusOne[0],obsSpeed_plusOne[1], 999,999,999, diff_angle,self.object_reward] )
-        else:
-            if obsSpeed_plusOne.magnitude()<=0:
-                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], 999,999,999, self.angle_between1([1,0],pred_direction),pred_direction[0],pred_direction[1],diff_angle,self.object_reward] )
-            else:
-                self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], self.angle_between1([1,0], obsSpeed_plusOne),obsSpeed_plusOne[0],obsSpeed_plusOne[1], self.angle_between1([1,0],pred_direction),pred_direction[0],pred_direction[1],diff_angle,self.object_reward] )
-        
+                
     def unit_vector(self, vector):
         """ Returns the unit vector of the vector.  """
         #return vector / np.linalg.norm(vector)
@@ -361,7 +352,7 @@ class MovementGame(object):
         observation[observation_offset + 3] = self.hero.obsSpeed[1] 
         observation_offset += 4
         
-        # add normalized locaiton of the hero in environment        
+        # add normalized location of the hero in environment        
         observation[observation_offset]     = self.hero.position[0] / 350.0 - 1.0
         observation[observation_offset + 1] = self.hero.position[1] / 250.0 - 1.0
         

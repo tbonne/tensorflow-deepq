@@ -14,7 +14,8 @@ import csv
 #LOG_DIR = tempfile.mkdtemp()
 LOG_DIR = "/tmp/mnist_logs"
 print(LOG_DIR)
-SAVE_DIR = "/Users/tylerbonnell/Documents/RL_trained_agent/rla_03_test/model.ckpt"
+SAVE_DIR = "/Users/tylerbonnell/Documents/RL_trained_agent/rla_03_test2/model.ckpt"
+LOAD_DIR = "/Users/tylerbonnell/Documents/RL_trained_agent/rla_03_test2/model.ckpt"
 
 current_settings = {
     'objects': [
@@ -67,7 +68,7 @@ current_settings = {
     'hero_initial_position': [826.7389, 761.1064],
     'hero_initial_speed':    [1,   0],
     "maximum_speed":         [50, 50],
-    "object_radius": 20.0,
+    "object_radius": 1.0,
     "num_objects": {
         "groupMate1" : 1,
         "groupMate2" : 1,
@@ -109,8 +110,8 @@ current_settings = {
         "groupMate18" : 37
         
     },                
-    "num_observation_lines" : 32,
-    "observation_line_length": 100.,
+    "num_observation_lines" : 36,
+    "observation_line_length": 30.,
     "tolerable_distance_to_wall": 50,
     "wall_distance_penalty":  -0.0,
     "delta_v": 0.5,
@@ -124,7 +125,7 @@ current_settings = {
 
 #import observed movement data (GPS)
 gpsdata = []
-with open ('track12h_03_stand.csv', newline='') as csvfile:
+with open ('track12h_03_stand_sub.csv', newline='') as csvfile:
     gpsreader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_NONNUMERIC)
     next(gpsreader)
     for row in gpsreader:
@@ -171,7 +172,7 @@ else:
 
     # DiscreteDeepQ object
     current_controller = DiscreteDeepQ(g.observation_size, g.num_actions, brain, optimizer, session,
-                                       discount_rate=0.99, exploration_period=7000, max_experience=7000, 
+                                       discount_rate=0.0, exploration_period=7000, max_experience=7000, 
                                        store_every_nth=1, train_every_nth=1,
                                        summary_writer=journalist)
     
@@ -193,7 +194,7 @@ else:
     WAIT, VISUALIZE_EVERY = True, 1
 
 
-iterations = 150
+iterations = 1
 rewards = [None]*iterations
 
 for i in range(iterations):    
@@ -229,8 +230,8 @@ for i in range(iterations):
     #summary_str = session.run(summary_op, feed_dict=feed_dict)
     #journalist.add_summary(summary_str, i)
 
-#save_path = saver.save(session, SAVE_DIR)
-#print("Model saved in file: %s" % save_path)
+save_path = saver.save(session, SAVE_DIR)
+print("Model saved in file: %s" % save_path)
 
 session.close()
 print("Training iterations completed")
@@ -258,13 +259,13 @@ optimizer_val = tf.train.RMSPropOptimizer(learning_rate= 0.000, decay=0.0)
 
 #DiscreteDeepQ object
 current_controller_val = DiscreteDeepQ(g_validation.observation_size, g_validation.num_actions, brain_val, optimizer_val, session_val,
-                                    discount_rate=0.99, exploration_period=0, max_experience=7000, 
+                                    discount_rate=0.0, exploration_period=0, max_experience=7000, 
                                     store_every_nth=1, train_every_nth=9999999) #i.e. never train
 saver_val = tf.train.Saver()
-saver_val.restore(session_val, SAVE_DIR)
+saver_val.restore(session_val, LOAD_DIR)
 #print(session_val.run(tf.all_variables()))
 
-iterations_val = 30
+iterations_val = 0
 rewards_val = [None]*iterations_val
 
 for i in range(iterations_val):    
@@ -294,12 +295,13 @@ for i in range(iterations_val):
         
 
 print("iterations_val = ",i)
-    
-with open('xyout.csv', 'w', newline='') as csvfile:
-    writerOUT = csv.writer(csvfile, delimiter=' ',
+
+if iterations_val > 0:    
+    with open('xyout.csv', 'w', newline='') as csvfile:
+        writerOUT = csv.writer(csvfile, delimiter=' ',
                     quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    for item in xyout:
-        writerOUT.writerow([item,])
+        for item in xyout:
+            writerOUT.writerow([item,])
     
 print("Training rewards") 
 print(rewards) 
