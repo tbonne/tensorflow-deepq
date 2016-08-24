@@ -25,21 +25,6 @@ class GameObject(object):
         self.bounciness = 1.0
         self.colID = colID
 
-    def wall_collisions(self):
-        """Update speed upon collision with the wall."""
-        world_size = self.settings["world_size"]
-
-        for dim in range(2):
-            if self.position[dim] - self.radius       <= 0               and self.speed[dim] < 0:
-                self.speed[dim] = - self.speed[dim] * self.bounciness
-            elif self.position[dim] + self.radius + 1 >= world_size[dim] and self.speed[dim] > 0:
-                self.speed[dim] = - self.speed[dim] * self.bounciness
-
-    def move(self, dt):
-        """Move as if dt seconds passed"""
-        self.position += dt * self.speed
-        self.position = Point2(*self.position)
-        
     
     def update_position(self,GPS,timeS):
         self.position = Point2(GPS[timeS][self.colID],GPS[timeS][self.colID+1])
@@ -57,7 +42,7 @@ class GameObject(object):
         #else:
         """Update position based on GPS data"""
         self.update_position(GPS,timeS)
-
+        
     def as_circle(self):
         return Circle(self.position, float(self.radius))
 
@@ -73,7 +58,6 @@ class MovementGame(object):
         self.GPS = gpsFile
         self.timeStep = 0
         self.previousOffset = 0
-        self.deltaT = 0
         self.size  = self.settings["world_size"]
         self.walls = [LineSegment2(Point2(0,0),                        Point2(0,self.size[1])),
                       LineSegment2(Point2(0,self.size[1]),             Point2(self.size[0], self.size[1])),
@@ -100,6 +84,10 @@ class MovementGame(object):
         self.object_reward = 0
         self.collected_rewards = []
         self.xylist = []
+        self.hero.xdist = []
+        self.hero.ydist = []
+        self.hero.xypos = Vector2(-1,-1)
+        self.hero.lastRewards = 0
  
         # every observation_line sees one of objects or wall and
         # two numbers representing speed of the object (if applicable)
@@ -107,36 +95,13 @@ class MovementGame(object):
         # additionally there are two numbers representing agents own speed and position.
         self.observation_size = self.eye_observation_size * len(self.observation_lines) + 2 + 2 + 2
 
-        #self.directions = [Vector2(*d) for d in [[1,0], [0,1], [-1,0], [0,-1], [0.0,0.0], [-1,-1]]]
-        self.directions = [Vector2(*d) for d in [[1,0],[0.707,0.707], [0,1],[-0.707,0.707], [-1,0],[-0.707,-0.707],[0,-1],[0.707,-0.707],[0.0,0.0]]]
+        self.directions = [Vector2(*d) for d in [[1,0], [0,1], [-1,0], [0,-1], [0.0,0.0], [-1,-1], [1,1]]]
+        #self.directions = [Vector2(*d) for d in [[1,0],[0.707,0.707], [0,1],[-0.707,0.707], [-1,0],[-0.707,-0.707],[0,-1],[0.707,-0.707],[0.0,0.0]]]
         #self.directions = [Vector2(*d) for d in [[1],[-1], [0]]]
         self.num_actions      = len(self.directions)
 
         self.objects_eaten = defaultdict(lambda: 0)
-
-    def perform_action(self, action_id):
-        """Change speed to one of hero vectors"""
-        assert 0 <= action_id < self.num_actions
-        #action_id = random.randint(0, self.num_actions - 1) #used to quantify the range reward accumulation due to random chance
-        #self.hero.speed *= 0.5
-        #self.hero.speed += self.directions[action_id] * self.settings["delta_v"]
-        #if action_id==5:
-            #self.hero.speed *= 0.5
-        #else:
-            #self.hero.speed += self.directions[action_id] * self.settings["delta_v"]
         
-        #update my travel direction
-        self.hero.speed = self.directions[action_id]
-        
-        #update the true observed travel direction
-        if(self.timeStep>1):
-            obs_t0 = [self.GPS[self.timeStep][0],self.GPS[self.timeStep][1]]
-            obs_t1 = [self.GPS[self.timeStep-1][0],self.GPS[self.timeStep-1][1]]
-            self.hero.obsSpeed = Vector2(obs_t1[0]-obs_t0[0],obs_t1[1]-obs_t0[1])
-        
-        #record: x,y, obs direction, pred direction
-        self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], self.hero.obsSpeed[0],self.hero.obsSpeed[1],self.hero.speed[0],self.hero.speed[1]] )            
-
     def spawn_object(self, obj_type, colID):
         """Spawn object of a given type and add it to the objects array"""
         radius = self.settings["object_radius"]
@@ -146,27 +111,81 @@ class MovementGame(object):
         speed    = np.random.uniform(-max_speed, max_speed).astype(float)
         speed = Vector2(float(speed[0]), float(speed[1]))
 
-        self.objects.append(GameObject(position, speed, obj_type, self.settings,colID))
+        self.objects.append(GameObject(position, speed, obj_type, self.settings,colID))    
+
+    def perform_action(self, action_id):
+        """Change speed to one of hero vectors"""
+        assert 0 <= action_id < self.num_actions
+        
+        #update my travel direction based on controller
+        self.hero.speed *= (1-self.settings["friction"]) #tendency to slow down (friction/effort)
+        self.hero.speed += self.directions[action_id]*self.settings["delta_v"]
+        self.hero.xdist.append(self.hero.speed[0])
+        self.hero.ydist.append(self.hero.speed[1])
+        
+        #update my travel direction randomly
+        #action_id = random.randint(0, self.num_actions - 1) #used to quantify the range reward accumulation due to random chance
+                    
+        #record: x,y, obs direction, pred direction
+        self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], self.hero.obsSpeed[0],self.hero.obsSpeed[1],self.hero.speed[0],self.hero.speed[1]] )            
 
     def step(self, dt):
         """Simulate all the objects for a given amount of time.
-        i'll need to change this so that the positions update based on the gps data
         Also resolve collisions with the hero"""
         for obj in self.objects + [self.hero] :
-            #obj.step(dt)
             obj.step(dt, self.GPS, self.timeStep)
-        #self.resolve_collisions()
-        #self.matchingMovements()
+
+        #record observed travel of hero, update reference xypos to be used when updating rewards
+        obs_t0_hero = [self.GPS[self.timeStep][0],self.GPS[self.timeStep][1]]
+        obs_t1_hero = [self.GPS[self.timeStep-1][0],self.GPS[self.timeStep-1][1]]
+        self.hero.obsSpeed = Vector2(obs_t1_hero[0]-obs_t0_hero[0],obs_t1_hero[1]-obs_t0_hero[1])
+        if self.hero.xypos[0]==-1 and self.hero.xypos[0] == -1:
+                self.hero.xypos = obs_t0_hero
+                self.hero.lastRewards = 0    
+
+        #keep track of time
         self.timeStep=self.timeStep+1
-        #if(self.timeStep=7100)self.hero.position = 
-        self.deltaT = self.deltaT + 1
+        self.hero.lastRewards+=1
         print(self.timeStep)
         
-    def squared_distance(self, p1, p2):
-        return (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2
 
     def matchingMovements(self):
         """new reward function based on match with observed travel"""
+        
+        if self.hero.lastRewards==self.settings["deltaT"]:
+            pos_x=self.hero.xypos[0]
+            pos_y=self.hero.xypos[1]
+            self.hero.xypos[0]=-1
+            self.hero.xypos[1]=-1
+        
+            magnitude_dist = 0
+        
+            #predicted position
+            if self.hero.xdist.__sizeof__()>0:
+                for item in self.hero.xdist:
+                    pos_x += item
+                for item in self.hero.ydist:
+                    pos_y += item
+                
+                del self.hero.xdist[:]
+                del self.hero.ydist[:]
+        
+                #current position
+                obs_t0 = [self.GPS[self.timeStep][0],self.GPS[self.timeStep][1]]
+        
+                #difference between the current and predicted positions
+                magnitude_dist = pow( (pow(pos_x-obs_t0[0],2)+pow(pos_y-obs_t0[1],2)),0.5) #given speed over the same amount of time
+        
+                if magnitude_dist < self.settings["withinR"]:
+                    self.object_reward += self.settings["max_rewards"]*pow(1-magnitude_dist/self.settings["withinR"],2)
+        
+        
+            print("Total offset in distance = ", magnitude_dist,"  --  Rewards given ",self.object_reward)
+            print("Obs = ", obs_t0,"  pred = [",pos_x, ", ",pos_y,"]")
+                        
+        """self.xypos = Vector2(0,0)
+        
+        
         diff_angle = 9999
         #sim = [self.hero.position[0], self.hero.position[1]]
         obs_t0 = [self.GPS[self.timeStep][0],self.GPS[self.timeStep][1]]
@@ -217,10 +236,11 @@ class MovementGame(object):
         #   self.hero.position = Point2(obs[0],obs[1])
         #    self.hero.speed = Vector2(self.GPS[self.timeStep][0]-self.GPS[self.timeStep-1][0], self.GPS[self.timeStep][1]-self.GPS[self.timeStep-1][1])
         #   self.deltaT=0
-        
-        print("Total offset in angle = ", diff_angle," Change = ",diff_angle - self.previousOffset,"  --  Rewards given ",self.object_reward)
-        print("Obs = ", obsSpeed_plusOne,"  pred = ",pred_direction)
+        """
                 
+    def squared_distance(self, p1, p2):
+        return (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2
+    
     def unit_vector(self, vector):
         """ Returns the unit vector of the vector.  """
         #return vector / np.linalg.norm(vector)
@@ -369,9 +389,9 @@ class MovementGame(object):
 
     def collect_reward(self):
         """Return accumulated object eating score + current distance to walls score"""
-        wall_reward =  self.settings["wall_distance_penalty"] * \
-                       np.exp(-self.distance_to_walls() / self.settings["tolerable_distance_to_wall"])
-        assert wall_reward < 1e-3, "You are rewarding hero for being close to the wall!"
+        #wall_reward =  self.settings["wall_distance_penalty"] * \
+        #               np.exp(-self.distance_to_walls() / self.settings["tolerable_distance_to_wall"])
+        #assert wall_reward < 1e-3, "You are rewarding hero for being close to the wall!"
         self.matchingMovements() #reward for being close to focal animal location 
         total_reward =  self.object_reward  #wall_reward +
         self.object_reward = 0

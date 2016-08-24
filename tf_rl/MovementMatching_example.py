@@ -62,13 +62,6 @@ current_settings = {
     'object_reward': {
         'friend': 0.1,
     },
-    'min_offset': 0.785,
-    'hero_bounces_off_walls': False,
-    'world_size': (3200,1550),
-    'hero_initial_position': [826.7389, 761.1064],
-    'hero_initial_speed':    [1,   0],
-    "maximum_speed":         [50, 50],
-    "object_radius": 1.0,
     "num_objects": {
         "groupMate1" : 1,
         "groupMate2" : 1,
@@ -109,18 +102,20 @@ current_settings = {
         "groupMate17" : 35,
         "groupMate18" : 37
         
-    },                
-    "num_observation_lines" : 36,
+    },
+    'hero_bounces_off_walls': False,
+    'world_size': (3200,1550),
+    'hero_initial_position': [826.7389, 761.1064],
+    'hero_initial_speed':    [1,   0],
+    "maximum_speed":         [3, 3],
+    "friction": 0.8,
+    "object_radius": 2.0,                
+    "num_observation_lines" : 18,
     "observation_line_length": 30.,
-    "tolerable_distance_to_wall": 50,
-    "wall_distance_penalty":  -0.0,
-    "delta_v": 0.5,
+    "delta_v": 0.48,
     'max_rewards': 4,
-    "negative_reward":0.0,
-    "positive_reward":1,
-    "movement_penalty":-0.001,
-    "deltaT":120,
-    "stopped_distance":0.2
+    "deltaT":10,
+    "withinR":2
 }
 
 #import observed movement data (GPS)
@@ -153,7 +148,9 @@ if human_control:
 else:
     # Tensorflow business - it is always good to reset a graph before creating a new controller.
     tf.reset_default_graph()
-    session = tf.InteractiveSession()
+    NUM_CORES = 4
+    session = tf.InteractiveSession(config=tf.ConfigProto(inter_op_parallelism_threads=NUM_CORES,
+                   intra_op_parallelism_threads=NUM_CORES))
 
     # This little guy will let us run tensorboard
     #      tensorboard --logdir [LOG_DIR]
@@ -179,6 +176,7 @@ else:
     #exploration_period=3500
     session.run(tf.initialize_all_variables())
     session.run(current_controller.target_network_update)
+    
     # graph was not available when journalist was created  
     journalist.add_graph(session.graph_def)
     saver = tf.train.Saver()
@@ -194,13 +192,13 @@ else:
     WAIT, VISUALIZE_EVERY = True, 1
 
 
-iterations = 1
+iterations = 5
 rewards = [None]*iterations
 
 for i in range(iterations):    
     try:
-        #for d in ['/cpu:1', '/cpu:2', '/cpu:3']:
-            with tf.device("/gpu:0"):
+        for d in ['/cpu:0', '/cpu:1', '/cpu:2', '/cpu:3']:
+        #   with tf.device("/cpu:0"):
             #with tf.device(d):
                 simulate(simulation=g,
                         controller=current_controller,
@@ -209,7 +207,7 @@ for i in range(iterations):
                         action_every=ACTION_EVERY,
                         wait=WAIT,
                         disable_training=False,
-                        simulation_resolution=0.01, #0.001
+                        simulation_resolution=None, #0.001
                         save_path="/Users/tylerbonnell/Documents/RL_gif",
                         validationStep=False)
     except IndexError: #end of GPS file
@@ -271,7 +269,7 @@ rewards_val = [None]*iterations_val
 for i in range(iterations_val):    
     try:
         #for d in ['/cpu:1', '/cpu:2', '/cpu:3']:
-            with tf.device("/gpu:0"):
+            with tf.device("/cpu:0"):
             #with tf.device(d):
                 simulate(simulation=g_validation,
                         controller=current_controller_val,
