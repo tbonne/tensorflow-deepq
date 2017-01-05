@@ -59,9 +59,6 @@ current_settings = {
         'groupMate17': 'magenta',
         'groupMate18': 'magenta'
     },
-    'object_reward': {
-        'friend': 0.1,
-    },
     "num_objects": {
         "groupMate1" : 1,
         "groupMate2" : 1,
@@ -103,24 +100,41 @@ current_settings = {
         "groupMate18" : 37
         
     },
-    'hero_bounces_off_walls': False,
+    "ID_number": {
+        "groupMate1" : 1,
+        "groupMate2" : 2,
+        "groupMate3" : 3,
+        "groupMate4" : 4,
+        "groupMate5" : 5,
+        "groupMate6" : 6,
+        "groupMate7" : 7,
+        "groupMate8" : 8,
+        "groupMate9" : 9,
+        "groupMate10" : 10,
+        "groupMate11" : 11,
+        "groupMate12" : 12,
+        "groupMate13" : 13,
+        "groupMate14" : 14,
+        "groupMate15" : 15,
+        "groupMate16" : 16,
+        "groupMate17" : 17,
+        "groupMate18" : 18
+        
+    },
     'world_size': (3200,1550),
-    'hero_initial_position': [826.7389, 761.1064],
-    'hero_initial_speed':    [1,   0],
-    "maximum_speed":         [3, 3],
-    "friction": 0.8,
     "object_radius": 2.0,                
-    "num_observation_lines" : 18,
-    "observation_line_length": 30.,
-    "delta_v": 0.48,
-    'max_rewards': 4,
-    "deltaT":10,
-    "withinR":2
+    'pos_rewards': 0.1,
+    'neg_rewards': 0.0,
+    "deltaT":30,
+    "skipT":7,
+    "moveThreshold":0.5,
+    "angleThreshold":3.14/8,
+    "number_of_closest_neigh":5
 }
 
 #import observed movement data (GPS)
 gpsdata = []
-with open ('track12h_03_stand_sub.csv', newline='') as csvfile:
+with open ('track12h_03_stand.csv', newline='') as csvfile:
     gpsreader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_NONNUMERIC)
     next(gpsreader)
     for row in gpsreader:
@@ -134,7 +148,6 @@ with open ('track12h_04_stand.csv', newline='') as csvfile:
     for row in gpsreader_val:
         gpsdata_validation.append(row)
 
-#print(gpsdata[0][1]) #time step, then the column number
 
 # create the game simulator
 g = MovementGame(current_settings, gpsdata)
@@ -169,11 +182,10 @@ else:
 
     # DiscreteDeepQ object
     current_controller = DiscreteDeepQ(g.observation_size, g.num_actions, brain, optimizer, session,
-                                       discount_rate=0.0, exploration_period=7000, max_experience=7000, 
+                                       discount_rate=0.99, exploration_period=3500, max_experience=7000, 
                                        store_every_nth=1, train_every_nth=1,
                                        summary_writer=journalist)
     
-    #exploration_period=3500
     session.run(tf.initialize_all_variables())
     session.run(current_controller.target_network_update)
     
@@ -192,7 +204,8 @@ else:
     WAIT, VISUALIZE_EVERY = True, 1
 
 
-iterations = 5
+iterations = 20
+selfT = 0
 rewards = [None]*iterations
 
 for i in range(iterations):    
@@ -212,7 +225,7 @@ for i in range(iterations):
                         validationStep=False)
     except IndexError: #end of GPS file
         print("Interrupted")
-        g.return_to_start()
+        g.return_to_start(i*selfT)
         rewards[i]=g.get_total_rewards()
     
     session.run(current_controller.target_network_update)
@@ -263,7 +276,7 @@ saver_val = tf.train.Saver()
 saver_val.restore(session_val, LOAD_DIR)
 #print(session_val.run(tf.all_variables()))
 
-iterations_val = 0
+iterations_val = 2
 rewards_val = [None]*iterations_val
 
 for i in range(iterations_val):    
@@ -278,18 +291,18 @@ for i in range(iterations_val):
                         action_every=ACTION_EVERY,
                         wait=WAIT,
                         disable_training=True,
-                        simulation_resolution=0.01, #0.001
+                        simulation_resolution=None, #0.001
                         save_path="/Users/tylerbonnell/Documents/RL_gif/val",
                         validationStep=True)
     except IndexError: #end of GPS file
         print("Interrupted")
-        g_validation.return_to_start()
+        g_validation.return_to_start(i*selfT)
         rewards_val[i]=g_validation.get_total_rewards()
         #xyout = g.get_xylist()
-        if iterations_val - i <= 2:
-            xyout = g.get_xylist()
-        else:
-            g.clear_xylist()
+        #if iterations_val - i <= 2:
+        xyout = g_validation.get_xylist()
+        #else:
+            #g.clear_xylist()
         
 
 print("iterations_val = ",i)
