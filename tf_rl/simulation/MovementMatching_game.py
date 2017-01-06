@@ -26,10 +26,11 @@ class GameObject(object):
         self.colID = colID
         self.idNumb = idNumb
         self.timeStep=self.settings["deltaT"];
+        self.deltaT = self.settings["deltaT"];
 
     
     def update_position_and_direction(self,GPS,timeS):
-        self.direction = self.unit_vector(Vector2(GPS[timeS][self.colID]-GPS[timeS-self.timeStep][self.colID],GPS[timeS][self.colID+1]-GPS[timeS-self.timeStep][self.colID+1]))
+        self.direction = self.unit_vector(Vector2(GPS[timeS][self.colID]-GPS[timeS-self.deltaT][self.colID],GPS[timeS][self.colID+1]-GPS[timeS-self.deltaT][self.colID+1]))
         newPos = Point2(GPS[timeS][self.colID],GPS[timeS][self.colID+1])
         self.distance = self.calculate_distance(self.position,newPos)
         self.position = newPos
@@ -37,9 +38,10 @@ class GameObject(object):
     
     def step(self, dt,GPS, timeS):
         """Update position and direction of travel based on GPS data"""
+        #if self.idNumb == 0:
+            #print("performing agent update now: ")
         self.update_position_and_direction(GPS,timeS)
-        if self.idNumb == 1:
-            print("performing agent update now: ")
+        
         
     def as_circle(self):
         return Circle(self.position, float(self.radius))
@@ -72,7 +74,7 @@ class MovementGame(object):
         self.timeStep = self.settings["deltaT"]
         self.previousOffset = 0
         self.size  = self.settings["world_size"]
-        self.hero = GameObject(Point2(self.GPS[self.timeStep][0],self.GPS[self.timeStep][1]),
+        self.hero = GameObject(Point2(self.GPS[0][0],self.GPS[0][1]),
                                self.unit_vector(Vector2(self.GPS[self.timeStep][0]-self.GPS[0][0],self.GPS[self.timeStep][1]-self.GPS[0][1])),
                                "hero",
                                self.settings,0,0)
@@ -96,7 +98,7 @@ class MovementGame(object):
         self.hero.prediction = [0,0]
  
         # observation size: 6 for each group member, additionally there are two numbers representing agents own speed and position, and one for the distance traveled during the step.
-        self.observation_size = 6 * len(self.settings["objects"]) + 6 +  2 + 1 #+ 2 
+        self.observation_size = 6 * len(self.settings["objects"]) + 3 #+ 2 
 
         self.actions = [Vector2(*d) for d in [[1,0], [0,1], [-1,0], [0,-1], [0.0,0.0], [-1,-1], [1,1],[-1,1], [1,-1]]]
         #self.actions = [Vector2(*d) for d in [[1,0],[0.707,0.707], [0,1],[-0.707,0.707], [-1,0],[-0.707,-0.707],[0,-1],[0.707,-0.707],[0.0,0.0]]]
@@ -113,7 +115,7 @@ class MovementGame(object):
         assert 0 <= action_id < self.num_actions
         
         #update my travel direction based on controller (Speed based: direction and magnitude)
-        print("3: performing action now: ")
+        #print("3: performing action now: ")
         self.hero.prediction = self.actions[action_id]
                     
         #update my travel based on controller (Speed based: direction and magnitude)
@@ -130,7 +132,7 @@ class MovementGame(object):
 
     def step(self, dt):
         """Simulate all the objects for a given amount of time"""
-        print("4: stepping agents now: ")
+        #print("4: stepping agents now: ")
         
         for obj in self.objects + [self.hero] :
             obj.step(dt, self.GPS, self.timeStep)
@@ -142,7 +144,7 @@ class MovementGame(object):
 
     def directionMatching(self):
         """Reward function based on match with observed direction of travel"""
-        print("2: performing rewards now: ")
+        #print("2: performing rewards now: ")
         currentRewards=0;
         
         #traveled greater than cutoff
@@ -158,8 +160,7 @@ class MovementGame(object):
                 currentRewards=self.settings["pos_rewards"]
         
         #record: x,y, obs direction, pred direction
-        self.xylist.append([self.GPS[self.timeStep][0], self.GPS[self.timeStep][1], self.hero.direction[0],self.hero.direction[1],self.hero.prediction[0],self.hero.prediction[1],self.hero.distance,currentRewards] )       
-        
+        self.xylist.append([self.GPS[self.timeStep-self.settings["deltaT"]][0], self.GPS[self.timeStep-self.settings["deltaT"]][1], self.hero.direction[0],self.hero.direction[1],self.hero.prediction[0],self.hero.prediction[1],self.hero.distance,currentRewards] )       
                 
     def unit_vector(self, vector):
         """ Returns the unit vector of the vector.  """
@@ -190,7 +191,7 @@ class MovementGame(object):
         proximity of the closest X objects to the hero. 
         """
         
-        print("1: performing observation now: ",self.timeStep)
+        #print("1: performing observation now: ",self.timeStep)
         num_obj_types = len(self.settings["objects"]) 
         #max_speed_x, max_speed_y = self.settings["maximum_speed"]
 
@@ -211,6 +212,9 @@ class MovementGame(object):
             dir_x, dir_y = tuple(relevant_objects[i].direction)
             relative_position_x = relevant_objects[i].position[0]-self.hero.position[0]
             relative_position_y = relevant_objects[i].position[1]-self.hero.position[1]
+            rel_vec = self.unit_vector(Vector2(relative_position_x,relative_position_y))
+            rel_x = rel_vec[0]
+            rel_y = rel_vec[1]
             proximity = ( 1 / (1 + (math.pow( math.pow(relative_position_x,2) + math.pow(relative_position_y,2),0.5)/10) ) ) #10 meters is where proximity reaches 0.5 
             if proximity > 1: 
                 proximity=1
@@ -220,8 +224,8 @@ class MovementGame(object):
             observation_offset = (relevant_objects[i].idNumb-1)*6
             observation[observation_offset]     = 1.0                                 #individual is one of the X closest
             observation[observation_offset + 1] = proximity                           #individual is X distance away
-            observation[observation_offset + 2] = relative_position_x                 #individual is moving in the x direction by X
-            observation[observation_offset + 3] = relative_position_y                 #individual is moving in the y direction by X
+            observation[observation_offset + 2] = rel_x                               #individual is moving in the x direction by X
+            observation[observation_offset + 3] = rel_y                               #individual is moving in the y direction by X
             observation[observation_offset + 4] = dir_x                               #individual is moving in the x direction by X
             observation[observation_offset + 5] = dir_y                               #individual is moving in the y direction by X
             observation_offset=0
@@ -230,15 +234,16 @@ class MovementGame(object):
             
 
         #record hero attributes
-        observation_offset = (num_obj_types*6)+6
+        observation_offset = ((num_obj_types-1)*6)+6
         #observation[observation_offset]     = self.hero.speed[0]                        #this is my predicted speed (action taken by the agent) at this time point
         #observation[observation_offset + 1] = self.hero.speed[1] 
         observation[observation_offset]      = self.hero.direction[0]                     #this is the observed speed leading to this time point (previous direction of travel)
         observation[observation_offset + 1]  = self.hero.direction[1] 
         #observation[observation_offset + 2] = self.hero.position[0] / 1600.0 - 1.0      #this is the location of the animal normalized to the extent of the landscape
         #observation[observation_offset + 3] = self.hero.position[1] / 775.0 - 1.0
-        observation[observation_offset + 2] = self.hero.distance
+        observation[observation_offset + 2] = ( 1 / (1 + self.hero.distance/10) )
         observation_offset += 3
+        #print(observation)
         
         assert observation_offset == self.observation_size
 

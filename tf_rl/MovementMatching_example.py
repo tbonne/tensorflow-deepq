@@ -123,13 +123,12 @@ current_settings = {
     },
     'world_size': (3200,1550),
     "object_radius": 2.0,                
-    'pos_rewards': 0.1,
+    'pos_rewards': 0.01,
     'neg_rewards': 0.0,
-    "deltaT":30,
-    "skipT":7,
-    "moveThreshold":0.5,
+    "deltaT":1,
+    "moveThreshold":0.02,
     "angleThreshold":3.14/8,
-    "number_of_closest_neigh":5
+    "number_of_closest_neigh":18
 }
 
 #import observed movement data (GPS)
@@ -182,7 +181,7 @@ else:
 
     # DiscreteDeepQ object
     current_controller = DiscreteDeepQ(g.observation_size, g.num_actions, brain, optimizer, session,
-                                       discount_rate=0.99, exploration_period=3500, max_experience=7000, 
+                                       discount_rate=0.0, exploration_period=3500, max_experience=7000, 
                                        store_every_nth=1, train_every_nth=1,
                                        summary_writer=journalist)
     
@@ -204,7 +203,7 @@ else:
     WAIT, VISUALIZE_EVERY = True, 1
 
 
-iterations = 20
+iterations = 1 
 selfT = 0
 rewards = [None]*iterations
 
@@ -276,7 +275,7 @@ saver_val = tf.train.Saver()
 saver_val.restore(session_val, LOAD_DIR)
 #print(session_val.run(tf.all_variables()))
 
-iterations_val = 2
+iterations_val = 1
 rewards_val = [None]*iterations_val
 
 for i in range(iterations_val):    
@@ -308,7 +307,7 @@ for i in range(iterations_val):
 print("iterations_val = ",i)
 
 if iterations_val > 0:    
-    with open('xyout.csv', 'w', newline='') as csvfile:
+    with open('xyout_test.csv', 'w', newline='') as csvfile:
         writerOUT = csv.writer(csvfile, delimiter=' ',
                     quotechar='|', quoting=csv.QUOTE_MINIMAL)
         for item in xyout:
