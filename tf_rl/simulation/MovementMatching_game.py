@@ -58,7 +58,7 @@ class GameObject(object):
         try:
             vecU = Vector2(vector[0]/vector.magnitude(),vector[1]/vector.magnitude())
         except ZeroDivisionError:
-            print ("division by zero")
+            print ()#"division by zero")
             
         return vecU 
 
@@ -96,6 +96,9 @@ class MovementGame(object):
         self.hero.ydist = []
         self.hero.xypos = Vector2(-1,-1)
         self.hero.prediction = [0,0]
+        self.count = 0
+        self.rewardCounter = 0
+        self.rewardList = []
  
         # observation size: 6 for each group member, additionally there are two numbers representing agents own speed and position, and one for the distance traveled during the step.
         self.observation_size = 6 * len(self.settings["objects"]) + 3 #+ 2 
@@ -139,6 +142,14 @@ class MovementGame(object):
 
         #keep track of time
         self.timeStep=self.timeStep+self.settings["deltaT"]
+        
+        #monitor rewards
+        self.count+=1
+        if(self.count>1000):
+            self.rewardList.append(self.rewardCounter)
+            self.rewardCounter=0
+            self.count=0
+            
         print(self.timeStep)
         
 
@@ -158,6 +169,9 @@ class MovementGame(object):
             if self.angle_between1(self.hero.prediction, self.hero.direction) < self.settings["angleThreshold"]:
                 self.object_reward += self.settings["pos_rewards"]
                 currentRewards=self.settings["pos_rewards"]
+        
+        #keep track of rewards (diagnostics)
+        self.rewardCounter += currentRewards 
         
         #record: x,y, obs direction, pred direction
         self.xylist.append([self.GPS[self.timeStep-self.settings["deltaT"]][0], self.GPS[self.timeStep-self.settings["deltaT"]][1], self.hero.direction[0],self.hero.direction[1],self.hero.prediction[0],self.hero.prediction[1],self.hero.distance,currentRewards] )       
@@ -282,6 +296,9 @@ class MovementGame(object):
     
     def get_xylist(self):
         return self.xylist
+    
+    def get_rewardList(self):
+        return self.rewardList
     
     def clear_xylist(self):
         del self.xylist[:]

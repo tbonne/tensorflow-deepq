@@ -14,8 +14,8 @@ import csv
 #LOG_DIR = tempfile.mkdtemp()
 LOG_DIR = "/tmp/mnist_logs"
 print(LOG_DIR)
-SAVE_DIR = "/Users/tylerbonnell/Documents/RL_trained_agent/rla_03_test2/model.ckpt"
-LOAD_DIR = "/Users/tylerbonnell/Documents/RL_trained_agent/rla_03_test2/model.ckpt"
+SAVE_DIR = "/Users/tylerbonnell/Documents/RL_trained_agent/rla_03_DM/DM_model.ckpt"
+LOAD_DIR = "/Users/tylerbonnell/Documents/RL_trained_agent/rla_03_DM/DM_model.ckpt"
 
 current_settings = {
     'objects': [
@@ -33,10 +33,7 @@ current_settings = {
         'groupMate12',
         'groupMate13',
         'groupMate14',
-        'groupMate15',
-        'groupMate16',
-        'groupMate17',
-        'groupMate18'
+        'groupMate15'
     ],
     'colors': {
         'hero':   'red',
@@ -54,10 +51,7 @@ current_settings = {
         'groupMate12': 'magenta',
         'groupMate13': 'magenta',
         'groupMate14': 'magenta',
-        'groupMate15': 'magenta',
-        'groupMate16': 'magenta',
-        'groupMate17': 'magenta',
-        'groupMate18': 'magenta'
+        'groupMate15': 'magenta'
     },
     "num_objects": {
         "groupMate1" : 1,
@@ -74,10 +68,7 @@ current_settings = {
         "groupMate12" : 1,
         "groupMate13" : 1,
         "groupMate14" : 1,
-        "groupMate15" : 1,
-        "groupMate16" : 1,
-        "groupMate17" : 1,
-        "groupMate18" : 1
+        "groupMate15" : 1
     },
     "column_ID": {
         "groupMate1" : 3,
@@ -94,10 +85,7 @@ current_settings = {
         "groupMate12" : 25,
         "groupMate13" : 27,
         "groupMate14" : 29,
-        "groupMate15" : 31,
-        "groupMate16" : 33,
-        "groupMate17" : 35,
-        "groupMate18" : 37
+        "groupMate15" : 31
         
     },
     "ID_number": {
@@ -115,10 +103,7 @@ current_settings = {
         "groupMate12" : 12,
         "groupMate13" : 13,
         "groupMate14" : 14,
-        "groupMate15" : 15,
-        "groupMate16" : 16,
-        "groupMate17" : 17,
-        "groupMate18" : 18
+        "groupMate15" : 15
         
     },
     'world_size': (3200,1550),
@@ -128,12 +113,12 @@ current_settings = {
     "deltaT":1,
     "moveThreshold":0.02,
     "angleThreshold":3.14/8,
-    "number_of_closest_neigh":18
+    "number_of_closest_neigh":15
 }
 
 #import observed movement data (GPS)
 gpsdata = []
-with open ('track12h_03_stand.csv', newline='') as csvfile:
+with open ('track12h_03_stand2.csv', newline='') as csvfile:
     gpsreader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_NONNUMERIC)
     next(gpsreader)
     for row in gpsreader:
@@ -141,7 +126,7 @@ with open ('track12h_03_stand.csv', newline='') as csvfile:
 #2hourTrack, track12h_03_stand, track12h_03_stand_sub
         
 gpsdata_validation = []
-with open ('track12h_04_stand.csv', newline='') as csvfile: 
+with open ('track12h_07_stand2.csv', newline='') as csvfile: 
     gpsreader_val = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_NONNUMERIC)
     next(gpsreader_val)
     for row in gpsreader_val:
@@ -203,8 +188,9 @@ else:
     WAIT, VISUALIZE_EVERY = True, 1
 
 
-iterations = 1 
+iterations = 0 #if this is greater than one then we need to fix how the model is being saved
 selfT = 0
+rewardsList = []
 rewards = [None]*iterations
 
 for i in range(iterations):    
@@ -226,6 +212,7 @@ for i in range(iterations):
         print("Interrupted")
         g.return_to_start(i*selfT)
         rewards[i]=g.get_total_rewards()
+        rewardsList=g.get_rewardList()
     
     session.run(current_controller.target_network_update)
 
@@ -240,8 +227,8 @@ for i in range(iterations):
     #summary_str = session.run(summary_op, feed_dict=feed_dict)
     #journalist.add_summary(summary_str, i)
 
-save_path = saver.save(session, SAVE_DIR)
-print("Model saved in file: %s" % save_path)
+    save_path = saver.save(session, SAVE_DIR)
+    print("Model saved in file: %s" % save_path) #this should be dropped down (remove tab) when running more than one iteration...
 
 session.close()
 print("Training iterations completed")
@@ -314,6 +301,7 @@ if iterations_val > 0:
             writerOUT.writerow([item,])
     
 print("Training rewards") 
+print(rewardsList)
 print(rewards) 
 print("Validation rewards") 
 print(rewards_val)
